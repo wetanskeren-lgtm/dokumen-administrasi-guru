@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administrasi Pembelajaran Mendalam - Guru SD</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<style>
+:root{--bg-primary:#0c1017;--bg-secondary:#141a24;--bg-card:#1a2233;--bg-card-hover:#1f2a3d;--border:#2a3548;--border-light:#354260;--text-primary:#e8ecf2;--text-secondary:#8b98b0;--text-muted:#5a6a82;--accent:#10b981;--accent-hover:#059669;--accent-glow:rgba(16,185,129,0.15);--accent-soft:rgba(16,185,129,0.08);--gold:#f59e0b;--gold-soft:rgba(245,158,11,0.1);--danger:#ef4444;--danger-soft:rgba(239,68,68,0.1);--info:#3b82f6;--info-soft:rgba(59,130,246,0.1);--sidebar-w:280px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg-secondary)}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:var(--bg-secondary);border-right:1px solid var(--border);z-index:50;display:flex;flex-direction:column;transition:transform .3s ease}
+.sidebar-header{padding:20px;border-bottom:1px solid var(--border)}
+.sidebar-logo{display:flex;align-items:center;gap:12px}
+.sidebar-logo .icon-box{width:42px;height:42px;background:linear-gradient(135deg,var(--accent),#059669);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex-shrink:0}
+.sidebar-logo h1{font-size:14px;font-weight:700;line-height:1.3}
+.sidebar-logo span{font-size:11px;color:var(--text-muted);font-weight:400}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0}
+.nav-group-label{padding:8px 20px 4px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted)}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 20px;cursor:pointer;color:var(--text-secondary);font-size:13px;font-weight:500;transition:all .2s;border-left:3px solid transparent}
+.nav-item:hover{background:var(--accent-soft);color:var(--text-primary)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);border-left-color:var(--accent)}
+.nav-item i{width:18px;text-align:center;font-size:14px}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border)}
+.sidebar-footer .ta-label{font-size:10px;color:var(--text-muted);margin-bottom:4px}
+.sidebar-footer .ta-value{font-size:13px;font-weight:700;color:var(--gold)}
+.main-content{margin-left:var(--sidebar-w);min-height:100vh}
+.topbar{position:sticky;top:0;z-index:40;background:rgba(12,16,23,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;align-items:center;justify-content:space-between}
+.topbar-title{font-size:20px;font-weight:800}
+.topbar-actions{display:flex;align-items:center;gap:12px}
+.btn{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:8px;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-hover);transform:translateY(-1px);box-shadow:0 4px 15px rgba(16,185,129,0.3)}
+.btn-secondary{background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--bg-card-hover);border-color:var(--border-light)}
+.btn-danger{background:var(--danger-soft);color:var(--danger);border:1px solid rgba(239,68,68,0.2)}
+.btn-danger:hover{background:rgba(239,68,68,0.2)}
+.btn-gold{background:var(--gold-soft);color:var(--gold);border:1px solid rgba(245,158,11,0.2)}
+.btn-gold:hover{background:rgba(245,158,11,0.2)}
+.btn-print{background:rgba(99,102,241,0.1);color:#818cf8;border:1px solid rgba(99,102,241,0.2)}
+.btn-print:hover{background:rgba(99,102,241,0.2)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-icon{width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);cursor:pointer;transition:all .2s;font-size:14px}
+.btn-icon:hover{color:var(--text-primary);border-color:var(--border-light)}
+.page-content{padding:28px 32px}
+.page-section{display:none}
+.page-section.active{display:block;animation:fadeUp .35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:24px;transition:all .2s}
+.card:hover{border-color:var(--border-light)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.card-title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px}
+.card-title i{color:var(--accent)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:28px}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;align-items:center;gap:16px;transition:all .25s}
+.stat-card:hover{transform:translateY(-2px);border-color:var(--border-light);box-shadow:0 8px 30px rgba(0,0,0,0.2)}
+.stat-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.stat-info h3{font-size:24px;font-weight:800;line-height:1}
+.stat-info p{font-size:12px;color:var(--text-muted);margin-top:4px}
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{background:var(--bg-secondary)}
+th{padding:12px 16px;text-align:left;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text-secondary)}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:var(--accent-soft)}
+tbody tr:last-child td{border-bottom:none}
+.form-group{margin-bottom:18px}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+.form-input,.form-select,.form-textarea{width:100%;padding:10px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:13px;font-family:inherit;transition:border-color .2s;outline:none}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.form-textarea{resize:vertical;min-height:80px}
+.form-select{cursor:pointer}
+.form-select option{background:var(--bg-secondary)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:640px;max-height:85vh;overflow-y:auto}
+.modal-lg{max-width:800px}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-header h3{font-size:16px;font-weight:700}
+.modal-body{padding:24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+.toast-container{position:fixed;top:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:10px}
+.toast{padding:14px 20px;border-radius:10px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:10px;animation:slideIn .3s ease;min-width:280px;box-shadow:0 8px 30px rgba(0,0,0,0.3)}
+.toast-success{background:#065f46;color:#a7f3d0;border:1px solid #10b981}
+.toast-error{background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444}
+.toast-info{background:#1e3a5f;color:#93c5fd;border:1px solid #3b82f6}
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-green{background:rgba(16,185,129,0.15);color:#34d399}
+.badge-gold{background:rgba(245,158,11,0.15);color:#fbbf24}
+.badge-blue{background:rgba(59,130,246,0.15);color:#60a5fa}
+.badge-red{background:rgba(239,68,68,0.15);color:#f87171}
+.portal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.portal-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px 16px;text-align:center;cursor:pointer;transition:all .25s}
+.portal-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 8px 25px rgba(16,185,129,0.15)}
+.portal-card i{font-size:28px;margin-bottom:10px;display:block}
+.portal-card h4{font-size:13px;font-weight:700;margin-bottom:4px}
+.portal-card p{font-size:11px;color:var(--text-muted)}
+.tab-bar{display:flex;gap:4px;background:var(--bg-secondary);border-radius:10px;padding:4px;margin-bottom:20px;overflow-x:auto}
+.tab-item{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--text-muted);transition:all .2s}
+.tab-item:hover{color:var(--text-secondary)}
+.tab-item.active{background:var(--accent);color:#fff}
+.link-card{display:flex;align-items:center;gap:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:12px;transition:all .2s}
+.link-card:hover{border-color:var(--border-light)}
+.link-card .link-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.link-card .link-info{flex:1}
+.link-card .link-info h4{font-size:14px;font-weight:600}
+.link-card .link-info p{font-size:12px;color:var(--text-muted)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-muted)}
+.empty-state i{font-size:48px;margin-bottom:16px;opacity:.3}
+.empty-state p{font-size:14px}
+.mobile-toggle{display:none}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.5)}}
+.glow-orb{position:fixed;border-radius:50%;pointer-events:none;filter:blur(120px);opacity:.07;z-index:0}
+
+/* ============================
+   PRINT STYLES - CETAK PDF RAPI
+   ============================ */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm 15mm 20mm 20mm;
+  }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+  body {
+    background: #fff !important;
+    color: #111 !important;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+  /* Sembunyikan semua elemen UI */
+  .sidebar, .topbar, .toast-container, .modal-overlay,
+  .btn, .btn-icon, .tab-bar, .mobile-toggle,
+  .no-print, .print-bar { display: none !important; }
+  /* Reset layout */
+  .main-content { margin-left: 0 !important; }
+  .page-content { padding: 0 !important; }
+  /* Semua halaman tampil */
+  .page-section { display: none !important; }
+  .page-section.printing { display: block !important; animation: none !important; }
+  /* Reset card */
+  .card {
+    background: #fff !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    margin-bottom: 16pt;
+  }
+  .card-header {
+    margin-bottom: 10pt;
+  }
+  .card-title {
+    color: #111 !important;
+    font-size: 13pt;
+    border-bottom: 2px solid #10b981;
+    padding-bottom: 6pt;
+    margin-bottom: 10pt;
+  }
+  .card-title i { color: #10b981 !important; }
+  /* Reset table */
+  .table-wrap {
+    border: 1px solid #333 !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+  table { font-size: 10pt; }
+  thead { background: #e8f5e9 !important; }
+  th {
+    background: #e8f5e9 !important;
+    color: #1b5e20 !important;
+    border-bottom: 2px solid #333 !important;
+    padding: 8pt 10pt !important;
+    font-size: 9pt;
+  }
+  td {
+    color: #111 !important;
+    border-bottom: 1px solid #ccc !important;
+    padding: 7pt 10pt !important;
+  }
+  tbody tr:hover { background: transparent !important; }
+  /* Reset badge */
+  .badge {
+    border: 1px solid #999 !important;
+    background: #f5f5f5 !important;
+    color: #333 !important;
+  }
+  /* Print header khusus */
+  #printHeader {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 20pt;
+    padding-bottom: 12pt;
+    border-bottom: 3px double #333;
+  }
+  #printHeader .ph-sekolah { font-size: 14pt; font-weight: 800; color: #111; }
+  #printHeader .ph-alamat { font-size: 9pt; color: #555; margin-top: 2pt; }
+  #printHeader .ph-judul { font-size: 13pt; font-weight: 700; color: #111; margin-top: 10pt; text-transform: uppercase; letter-spacing: 1px; }
+  #printHeader .ph-sub { font-size: 10pt; color: #555; margin-top: 2pt; }
+  /* Stat card dalam print */
+  .stat-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 8pt !important; margin-bottom: 16pt !important; }
+  .stat-card {
+    background: #f9f9f9 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4pt !important;
+    padding: 10pt !important;
+    box-shadow: none !important;
+  }
+  .stat-card:hover { transform: none !important; }
+  .stat-icon { width: 32pt; height: 32pt; font-size: 14pt; }
+  .stat-info h3 { font-size: 18pt; color: #111 !important; }
+  .stat-info p { color: #555 !important; font-size: 8pt; }
+  /* RPM card print */
+  .page-section#print-section-rpm .card {
+    border: 1px solid #ccc !important;
+    border-radius: 4pt !important;
+    padding: 14pt !important;
+    margin-bottom: 12pt !important;
+  }
+  .page-section#print-section-rpm .card > div > div {
+    color: #111 !important;
+  }
+  .page-section#print-section-rpm .card > div > div > span {
+    color: #555 !important;
+  }
+  /* Link card print */
+  .link-card {
+    border: 1px solid #ccc !important;
+    border-radius: 4pt !important;
+    padding: 8pt 12pt !important;
+    background: #f9f9f9 !important;
+  }
+  .link-icon { width: 28pt; height: 28pt; font-size: 12pt; }
+  /* Analisis nilai print */
+  #analisisNilaiContainer { display: block !important; }
+  #analisisNilaiContainer .stat-grid { grid-template-columns: repeat(4,1fr) !important; }
+  /* Portal grid print */
+  .portal-grid { grid-template-columns: repeat(3,1fr) !important; }
+  .portal-card {
+    border: 1px solid #ccc !important;
+    border-radius: 4pt !important;
+    padding: 10pt !important;
+    background: #f9f9f9 !important;
+  }
+  .portal-card:hover { transform: none !important; box-shadow: none !important; }
+  /* Form dalam print */
+  .form-input, .form-select, .form-textarea {
+    background: #fff !important;
+    border: 1px solid #ccc !important;
+    color: #111 !important;
+    border-radius: 0 !important;
+    padding: 6pt 8pt !important;
+  }
+  .form-label { color: #333 !important; }
+  .form-group { margin-bottom: 10pt !important; }
+  /* Footer print */
+  #printFooter {
+    display: block !important;
+    text-align: center;
+    margin-top: 24pt;
+    padding-top: 10pt;
+    border-top: 1px solid #ccc;
+    font-size: 8pt;
+    color: #888;
+  }
+  /* Page break */
+  .page-break { page-break-before: always; }
+  /* Tanda tangan */
+  .sign-area {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30pt;
+  }
+  .sign-box {
+    text-align: center;
+    width: 180pt;
+  }
+  .sign-box .sign-title { font-size: 10pt; font-weight: 600; }
+  .sign-box .sign-space { height: 50pt; }
+  .sign-box .sign-name { font-size: 10pt; font-weight: 700; border-bottom: 1px solid #111; display: inline-block; padding: 0 20pt; }
+  .sign-box .sign-nip { font-size: 9pt; color: #555; }
+}
+
+/* Print Header (hidden on screen) */
+#printHeader { display: none; }
+#printFooter { display: none; }
+
+/* Print bar di atas konten */
+.print-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding: 12px 18px;
+  background: rgba(99,102,241,0.06);
+  border: 1px solid rgba(99,102,241,0.15);
+  border-radius: 10px;
+}
+.print-bar span { font-size: 13px; color: #818cf8; display: flex; align-items: center; gap: 8px; }
+
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main-content{margin-left:0}
+  .mobile-toggle{display:flex}
+  .page-content{padding:20px 16px}
+  .topbar{padding:12px 16px}
+  .form-row,.form-row-3{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .print-bar{flex-direction:column;gap:8px;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<div class="glow-orb" style="width:400px;height:400px;background:var(--accent);top:-100px;right:-100px;"></div>
+<div class="glow-orb" style="width:300px;height:300px;background:var(--gold);bottom:-50px;left:200px;"></div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Print Header -->
+<div id="printHeader">
+  <div class="ph-sekolah" id="phSekolah">SD NEGERI CONTOH</div>
+  <div class="ph-alamat" id="phAlamat">Jl. Pendidikan No. 1, Kecamatan Contoh, Kabupaten Contoh</div>
+  <div class="ph-judul" id="phJudul">DOKUMEN ADMINISTRASI PEMBELAJARAN</div>
+  <div class="ph-sub" id="phSub">Tahun Ajaran 2026/2027 - Kurikulum Merdeka</div>
+</div>
+
+<!-- Print Footer -->
+<div id="printFooter">
+  Dicetak dari Sistem Administrasi Pembelajaran Mendalam Digital &mdash; Tahun Ajaran 2026/2027 &mdash; Halaman <span class="page-number"></span>
+</div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <div class="icon-box"><i class="fas fa-graduation-cap"></i></div>
+      <div><h1>Administrasi<br>Pembelajaran</h1><span>Kurikulum Merdeka</span></div>
+    </div>
+  </div>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
+  <div class="sidebar-footer">
+    <div class="ta-label">Tahun Ajaran</div>
+    <div class="ta-value">2026/2027</div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);"><span class="pulse-dot"></span> Firebase Connected</div>
+  </div>
+</aside>
+
+<div class="main-content">
+  <header class="topbar no-print">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="btn-icon mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="fas fa-bars"></i></button>
+      <h2 class="topbar-title" id="pageTitle">Dashboard</h2>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn-icon" onclick="showModal('modalSetting')" title="Pengaturan"><i class="fas fa-cog"></i></button>
+    </div>
+  </header>
+
+  <div class="page-content" id="pageContent">
+
+    <!-- DASHBOARD -->
+    <section class="page-section active" id="page-dashboard">
+      <div class="stat-grid" id="statGrid"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="card"><div class="card-header"><div class="card-title"><i class="fas fa-clock"></i> Aktivitas Terbaru</div></div><div id="recentActivity"><div class="empty-state"><i class="fas fa-inbox"></i><p>Belum ada aktivitas</p></div></div></div>
+        <div class="card"><div class="card-header"><div class="card-title"><i class="fas fa-bolt"></i> Akses Cepat</div></div>
+          <div class="portal-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="portal-card" onclick="navigateTo('peserta-didik')"><i class="fas fa-users" style="color:var(--accent)"></i><h4>Data Siswa</h4><p>Kelola peserta didik</p></div>
+            <div class="portal-card" onclick="navigateTo('rpm')"><i class="fas fa-file-lines" style="color:var(--gold)"></i><h4>RPM</h4><p>Rencana Pembelajaran</p></div>
+            <div class="portal-card" onclick="navigateTo('nilai')"><i class="fas fa-chart-column" style="color:var(--info)"></i><h4>Penilaian</h4><p>Input & rekap nilai</p></div>
+            <div class="portal-card" onclick="navigateTo('portal-digital')"><i class="fas fa-globe" style="color:#a78bfa"></i><h4>Portal Digital</h4><p>Link & integrasi</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PESERTA DIDIK -->
+    <section class="page-section" id="page-peserta-didik">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak halaman ini ke PDF untuk dokumen fisik</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('peserta-didik','Daftar Peserta Didik')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;" class="no-print">
+        <div class="tab-bar" id="tabKelas"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="clearFormSiswa();showModal('modalSiswa')"><i class="fas fa-plus"></i> Tambah Siswa</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportSiswa()"><i class="fas fa-download"></i> Export CSV</button>
+        </div>
+      </div>
+      <div class="card"><div class="table-wrap"><table><thead><tr><th>No</th><th>NIS</th><th>Nama Lengkap</th><th>Jenis Kelamin</th><th>Tempat, Tanggal Lahir</th><th>Alamat</th><th>Nama Orang Tua</th><th>No. HP Ortu</th><th class="no-print">Aksi</th></tr></thead><tbody id="tbodySiswa"></tbody></table></div><div id="emptySiswa" class="empty-state" style="display:none;"><i class="fas fa-user-plus"></i><p>Belum ada data siswa untuk kelas ini</p></div></div>
+    </section>
+
+    <!-- IDENTITAS GURU -->
+    <section class="page-section" id="page-identitas-guru">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak identitas guru</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('identitas-guru','Identitas Guru')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div class="card" style="max-width:800px;" id="identitasGuruCard">
+        <div class="card-header"><div class="card-title"><i class="fas fa-id-card"></i> Identitas Guru</div></div>
+        <div id="formIdentitasGuru">
+          <div class="form-row"><div class="form-group"><label class="form-label">Nama Lengkap</label><input class="form-input" id="guruNama" placeholder="Nama lengkap"></div><div class="form-group"><label class="form-label">NIP</label><input class="form-input" id="guruNIP" placeholder="NIP"></div></div>
+          <div class="form-row"><div class="form-group"><label class="form-label">NUPTK</label><input class="form-input" id="guruNUPTK" placeholder="NUPTK"></div><div class="form-group"><label class="form-label">Jabatan</label><input class="form-input" id="guruJabatan" placeholder="Jabatan"></div></div>
+          <div class="form-row"><div class="form-group"><label class="form-label">Tempat, Tanggal Lahir</label><input class="form-input" id="guruTTL" placeholder="Kota, Tgl Lahir"></div><div class="form-group"><label class="form-label">Jenis Kelamin</label><select class="form-select" id="guruJK"><option value="">-- Pilih --</option><option>Laki-laki</option><option>Perempuan</option></select></div></div>
+          <div class="form-row"><div class="form-group"><label class="form-label">Pangkat/Golongan</label><input class="form-input" id="guruGolongan" placeholder="III/a"></div><div class="form-group"><label class="form-label">Tugas Tambahan</label><input class="form-input" id="guruTugasTambahan" placeholder="Wali Kelas, dsb."></div></div>
+          <div class="form-row"><div class="form-group"><label class="form-label">Email</label><input class="form-input" id="guruEmail" placeholder="Email"></div><div class="form-group"><label class="form-label">No. HP</label><input class="form-input" id="guruHP" placeholder="No HP"></div></div>
+          <div class="form-group"><label class="form-label">Alamat</label><textarea class="form-textarea" id="guruAlamat" placeholder="Alamat lengkap"></textarea></div>
+          <div style="text-align:right;margin-top:10px;" class="no-print"><button class="btn btn-primary" onclick="simpanIdentitasGuru()"><i class="fas fa-save"></i> Simpan</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- IDENTITAS SEKOLAH -->
+    <section class="page-section" id="page-identitas-sekolah">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak identitas sekolah</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('identitas-sekolah','Identitas Satuan Pendidikan')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div class="card" style="max-width:800px;">
+        <div class="card-header"><div class="card-title"><i class="fas fa-school"></i> Identitas Satuan Pendidikan</div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Nama Sekolah</label><input class="form-input" id="sekNama" placeholder="Nama SD/MI"></div><div class="form-group"><label class="form-label">NPSN</label><input class="form-input" id="sekNPSN" placeholder="NPSN"></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Alamat</label><input class="form-input" id="sekAlamat" placeholder="Alamat"></div><div class="form-group"><label class="form-label">Kelurahan/Desa</label><input class="form-input" id="sekDesa" placeholder="Desa"></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Kecamatan</label><input class="form-input" id="sekKec" placeholder="Kecamatan"></div><div class="form-group"><label class="form-label">Kabupaten/Kota</label><input class="form-input" id="sekKab" placeholder="Kab/Kota"></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Provinsi</label><input class="form-input" id="sekProv" placeholder="Provinsi"></div><div class="form-group"><label class="form-label">Kode Pos</label><input class="form-input" id="sekPos" placeholder="Kode Pos"></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">No. Telepon</label><input class="form-input" id="sekTelp" placeholder="Telp"></div><div class="form-group"><label class="form-label">Email</label><input class="form-input" id="sekEmail" placeholder="Email"></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Kepala Sekolah</label><input class="form-input" id="sekKepsek" placeholder="Kepsek"></div><div class="form-group"><label class="form-label">NIP Kepala Sekolah</label><input class="form-input" id="sekNIPKepsek" placeholder="NIP"></div></div>
+        <div style="text-align:right;margin-top:10px;" class="no-print"><button class="btn btn-primary" onclick="simpanIdentitasSekolah()"><i class="fas fa-save"></i> Simpan</button></div>
+      </div>
+    </section>
+
+    <!-- JADWAL -->
+    <section class="page-section" id="page-jadwal">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak jadwal pelajaran</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('jadwal','Jadwal Pelajaran')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;" class="no-print">
+        <div class="tab-bar" id="tabHari"></div>
+        <button class="btn btn-primary btn-sm" onclick="showModal('modalJadwal')"><i class="fas fa-plus"></i> Tambah Jadwal</button>
+      </div>
+      <div class="card"><div class="table-wrap"><table><thead><tr><th>Jam</th><th>Mata Pelajaran</th><th>Kelas</th><th>Ruangan</th><th class="no-print">Aksi</th></tr></thead><tbody id="tbodyJadwal"></tbody></table></div><div id="emptyJadwal" class="empty-state" style="display:none;"><i class="fas fa-calendar-xmark"></i><p>Belum ada jadwal</p></div></div>
+    </section>
+
+    <!-- RPM -->
+    <section class="page-section" id="page-rpm">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak RPM ke PDF</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('rpm','Rencana Pembelajaran Mendalam (RPM)')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;" class="no-print">
+        <div class="tab-bar" id="tabMapelRPM"></div>
+        <button class="btn btn-primary btn-sm" onclick="clearFormRPM();showModal('modalRPM')"><i class="fas fa-plus"></i> Buat RPM</button>
+      </div>
+      <div id="rpmList"></div>
+      <div id="emptyRPM" class="empty-state" style="display:none;"><i class="fas fa-file-circle-plus"></i><p>Belum ada RPM</p></div>
+    </section>
+
+    <!-- JURNAL -->
+    <section class="page-section" id="page-jurnal">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak jurnal harian</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('jurnal','Jurnal Harian Pembelajaran')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;" class="no-print">
+        <input type="date" class="form-input" style="max-width:200px;" id="filterJurnal" onchange="renderJurnal()">
+        <button class="btn btn-primary btn-sm" onclick="showModal('modalJurnal')"><i class="fas fa-plus"></i> Tambah Jurnal</button>
+      </div>
+      <div class="card"><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Jam</th><th>Mata Pelajaran</th><th>Kelas</th><th>Materi</th><th>Kegiatan</th><th class="no-print">Aksi</th></tr></thead><tbody id="tbodyJurnal"></tbody></table></div><div id="emptyJurnal" class="empty-state" style="display:none;"><i class="fas fa-book-open"></i><p>Belum ada jurnal</p></div></div>
+    </section>
+
+    <!-- NILAI -->
+    <section class="page-section" id="page-nilai">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak daftar nilai / analisis</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('nilai','Daftar Nilai')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;" class="no-print">
+        <div class="tab-bar" id="tabMapelNilai"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <select class="form-select" style="width:150px;" id="filterJenisNilai" onchange="renderNilai()"><option value="formatif">Formatif</option><option value="sumatif">Sumatif</option><option value="diagnostik">Diagnostik</option></select>
+          <button class="btn btn-primary btn-sm" onclick="showModal('modalNilai')"><i class="fas fa-plus"></i> Input Nilai</button>
+          <button class="btn btn-secondary btn-sm" onclick="renderAnalisisNilai()"><i class="fas fa-chart-pie"></i> Analisis</button>
+        </div>
+      </div>
+      <div class="card"><div class="table-wrap" id="tableNilaiWrap"></div><div id="emptyNilai" class="empty-state" style="display:none;"><i class="fas fa-clipboard-list"></i><p>Belum ada data nilai</p></div></div>
+      <div id="analisisNilaiContainer" style="margin-top:20px;display:none;"></div>
+    </section>
+
+    <!-- KEHADIRAN -->
+    <section class="page-section" id="page-kehadiran">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak rekap kehadiran</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('kehadiran','Rekap Kehadiran Peserta Didik')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;" class="no-print">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select class="form-select" style="width:140px;" id="filterKelasHadir" onchange="renderKehadiran()"></select>
+          <input type="date" class="form-input" style="max-width:180px;" id="filterTanggalHadir" onchange="renderKehadiran()">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="simpanKehadiran()"><i class="fas fa-save"></i> Simpan</button>
+      </div>
+      <div class="card"><div class="table-wrap"><table><thead><tr><th>No</th><th>NIS</th><th>Nama Siswa</th><th>H</th><th>S</th><th>I</th><th>A</th><th>Keterangan</th></tr></thead><tbody id="tbodyKehadiran"></tbody></table></div></div>
+    </section>
+
+    <!-- PORTAL DIGITAL -->
+    <section class="page-section" id="page-portal-digital">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak daftar link portal</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('portal-digital','Portal Digitalisasi')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div class="card" style="margin-bottom:24px;">
+        <div class="card-header"><div class="card-title"><i class="fas fa-folder-open" style="color:#f59e0b;"></i> Google Drive - Arsip Dokumen</div></div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Akses arsip dokumen administrasi melalui Google Drive.</p>
+        <a href="https://drive.google.com/drive/folders/1_u1YXz7thsm2n6fidmPzrvnKEvXgRT_p?usp=drive_link" target="_blank" class="btn btn-gold no-print"><i class="fab fa-google-drive"></i> Buka Google Drive</a>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;" id="gdriveLinkPrint">https://drive.google.com/drive/folders/1_u1YXz7thsm2n6fidmPzrvnKEvXgRT_p</p>
+      </div>
+      <div class="card" style="margin-bottom:24px;">
+        <div class="card-header"><div class="card-title"><i class="fas fa-link"></i> Portal & Link Digitalisasi</div><button class="btn btn-primary btn-sm no-print" onclick="showModal('modalLink')"><i class="fas fa-plus"></i> Tambah Link</button></div>
+        <div id="linkList"></div>
+        <div id="emptyLink" class="empty-state" style="display:none;"><i class="fas fa-link-slash"></i><p>Belum ada link</p></div>
+      </div>
+    </section>
+
+    <!-- DOKUMEN KURIKULUM -->
+    <section class="page-section" id="page-kurikulum">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak dokumen kurikulum</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('kurikulum','Dokumen Kurikulum')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div class="portal-grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));">
+        <div class="portal-card" onclick="navigateTo('identitas-guru')"><i class="fas fa-chalkboard-user" style="color:var(--accent)"></i><h4>Identitas Guru</h4><p>Data lengkap guru</p></div>
+        <div class="portal-card" onclick="navigateTo('identitas-sekolah')"><i class="fas fa-school" style="color:var(--gold)"></i><h4>Identitas Sekolah</h4><p>Profil satuan pendidikan</p></div>
+        <div class="portal-card" onclick="showModal('modalVisiMisi')"><i class="fas fa-bullseye" style="color:#f87171"></i><h4>Visi, Misi, Tujuan</h4><p>Latar & tujuan</p></div>
+        <div class="portal-card" onclick="showModal('modalStrukturKurikulum')"><i class="fas fa-sitemap" style="color:#60a5fa"></i><h4>Struktur Kurikulum</h4><p>Kurikulum Merdeka</p></div>
+        <div class="portal-card" onclick="showModal('modalProfilLulusan')"><i class="fas fa-star" style="color:#fbbf24"></i><h4>Profil Pelajar Pancasila</h4><p>Dimensi P5</p></div>
+        <div class="portal-card" onclick="showModal('modalPrinsipPemb')"><i class="fas fa-lightbulb" style="color:#a78bfa"></i><h4>Prinsip Pembelajaran</h4><p>Mendalam & bermakna</p></div>
+        <div class="portal-card" onclick="showModal('modalTeknologi')"><i class="fas fa-laptop-code" style="color:#34d399"></i><h4>Teknologi Digital</h4><p>Pemanfaatan teknologi</p></div>
+        <div class="portal-card" onclick="showModal('modalKarakteristik')"><i class="fas fa-fingerprint" style="color:#fb923c"></i><h4>Karakteristik</h4><p>Sekolah & peserta didik</p></div>
+      </div>
+    </section>
+
+    <!-- PERENCANAAN -->
+    <section class="page-section" id="page-perencanaan">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak dokumen perencanaan</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('perencanaan','Dokumen Perencanaan')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div class="portal-grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));">
+        <div class="portal-card" onclick="showModal('modalCP')"><i class="fas fa-flag-checkered" style="color:var(--accent)"></i><h4>Capaian Pembelajaran</h4><p>CP Fase & elemen</p></div>
+        <div class="portal-card" onclick="showModal('modalATP')"><i class="fas fa-route" style="color:var(--gold)"></i><h4>Alur Tujuan Pembelajaran</h4><p>ATP</p></div>
+        <div class="portal-card" onclick="showModal('modalProta')"><i class="fas fa-calendar-days" style="color:#60a5fa"></i><h4>Program Tahunan</h4><p>Prota</p></div>
+        <div class="portal-card" onclick="showModal('modalPromes')"><i class="fas fa-calendar-week" style="color:#f87171"></i><h4>Program Semester</h4><p>Promes</p></div>
+        <div class="portal-card" onclick="showModal('modalPemetaan')"><i class="fas fa-map" style="color:#a78bfa"></i><h4>Pemetaan</h4><p>Materi, TP, P5, PM</p></div>
+        <div class="portal-card" onclick="navigateTo('rpm')"><i class="fas fa-file-lines" style="color:#34d399"></i><h4>RPM</h4><p>Rencana Pemb. Mendalam</p></div>
+        <div class="portal-card" onclick="showModal('modalDiferensiasi')"><i class="fas fa-people-arrows" style="color:#fb923c"></i><h4>Berdiferensiasi</h4><p>Program diferensiasi</p></div>
+        <div class="portal-card" onclick="showModal('modalLiterasi')"><i class="fas fa-book-reader" style="color:#fbbf24"></i><h4>Literasi & Numerasi</h4><p>Program penguatan</p></div>
+      </div>
+    </section>
+
+    <!-- ASESMEN -->
+    <section class="page-section" id="page-asesmen">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak dokumen asesmen</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('asesmen','Dokumen Asesmen')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div class="portal-grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));">
+        <div class="portal-card" onclick="showModal('modalProgramAsesmen')"><i class="fas fa-clipboard-check" style="color:var(--accent)"></i><h4>Program Asesmen</h4><p>Rencana asesmen</p></div>
+        <div class="portal-card" onclick="navigateTo('nilai')"><i class="fas fa-stethoscope" style="color:#60a5fa"></i><h4>Asesmen Diagnostik</h4><p>Asesmen awal</p></div>
+        <div class="portal-card" onclick="navigateTo('nilai')"><i class="fas fa-tasks" style="color:var(--gold)"></i><h4>Asesmen Formatif</h4><p>Penilaian proses</p></div>
+        <div class="portal-card" onclick="navigateTo('nilai')"><i class="fas fa-award" style="color:#f87171"></i><h4>Asesmen Sumatif</h4><p>Penilaian akhir</p></div>
+        <div class="portal-card" onclick="showModal('modalKisiKisi')"><i class="fas fa-table-cells" style="color:#a78bfa"></i><h4>Kisi-Kisi</h4><p>Blueprint soal</p></div>
+        <div class="portal-card" onclick="showModal('modalSoal')"><i class="fas fa-pen-to-square" style="color:#34d399"></i><h4>Bank Soal</h4><p>Koleksi soal</p></div>
+        <div class="portal-card" onclick="showModal('modalRubrik')"><i class="fas fa-list-check" style="color:#fb923c"></i><h4>Rubrik Penilaian</h4><p>Pedoman penskoran</p></div>
+        <div class="portal-card" onclick="navigateTo('nilai')"><i class="fas fa-chart-bar" style="color:#fbbf24"></i><h4>Analisis Hasil</h4><p>Rekap & ketuntasan</p></div>
+      </div>
+    </section>
+
+    <!-- TINDAK LANJUT -->
+    <section class="page-section" id="page-tindak-lanjut">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak tindak lanjut</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('tindak-lanjut','Tindak Lanjut Hasil Pembelajaran')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div style="display:flex;gap:10px;margin-bottom:20px;" class="no-print">
+        <button class="btn btn-primary btn-sm" onclick="showModal('modalRemedial')"><i class="fas fa-rotate-left"></i> Remedial</button>
+        <button class="btn btn-gold btn-sm" onclick="showModal('modalPengayaan')"><i class="fas fa-arrow-up-right-dots"></i> Pengayaan</button>
+        <button class="btn btn-secondary btn-sm" onclick="showModal('modalPendampingan')"><i class="fas fa-handshake-angle"></i> Pendampingan</button>
+      </div>
+      <div class="card"><div class="card-header"><div class="card-title"><i class="fas fa-clipboard-list"></i> Catatan Tindak Lanjut</div></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Siswa</th><th>Jenis</th><th>Keterangan</th><th>Status</th><th class="no-print">Aksi</th></tr></thead><tbody id="tbodyTindakLanjut"></tbody></table></div><div id="emptyTL" class="empty-state" style="display:none;"><i class="fas fa-clipboard-question"></i><p>Belum ada catatan</p></div></div>
+    </section>
+
+    <!-- WALI KELAS -->
+    <section class="page-section" id="page-wali-kelas">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak rekap wali kelas</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('wali-kelas','Rekapitulasi Perkembangan Peserta Didik')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div class="portal-grid no-print" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));margin-bottom:24px;">
+        <div class="portal-card" onclick="navigateTo('peserta-didik')"><i class="fas fa-users" style="color:var(--accent)"></i><h4>Buku Data Siswa</h4></div>
+        <div class="portal-card" onclick="navigateTo('kehadiran')"><i class="fas fa-clipboard-user" style="color:var(--gold)"></i><h4>Kehadiran</h4></div>
+        <div class="portal-card" onclick="showModal('modalKasus')"><i class="fas fa-triangle-exclamation" style="color:#f87171"></i><h4>Catatan Kasus</h4></div>
+        <div class="portal-card" onclick="showModal('modalBimbingan')"><i class="fas fa-hands-holding-child" style="color:#60a5fa"></i><h4>Bimbingan</h4></div>
+        <div class="portal-card" onclick="showModal('modalKomunikasi')"><i class="fas fa-comments" style="color:#a78bfa"></i><h4>Komunikasi Ortu</h4></div>
+        <div class="portal-card" onclick="showModal('modalPrestasi')"><i class="fas fa-trophy" style="color:#fbbf24"></i><h4>Prestasi</h4></div>
+      </div>
+      <div class="card"><div class="card-header"><div class="card-title"><i class="fas fa-chart-line"></i> Rekapitulasi Perkembangan Peserta Didik</div></div><div class="table-wrap"><table><thead><tr><th>No</th><th>Nama</th><th>Sakit</th><th>Izin</th><th>Alfa</th><th>Nilai Rata-rata</th><th>Tindak Lanjut</th><th>Ket</th></tr></thead><tbody id="tbodyRekapWali"></tbody></table></div></div>
+    </section>
+
+    <!-- SUPERVISI -->
+    <section class="page-section" id="page-supervisi">
+      <div class="print-bar no-print"><span><i class="fas fa-print"></i> Cetak catatan supervisi</span><button class="btn btn-print btn-sm" onclick="cetakHalaman('supervisi','Catatan Supervisi')"><i class="fas fa-file-pdf"></i> Cetak PDF</button></div>
+      <div style="display:flex;gap:10px;margin-bottom:20px;" class="no-print">
+        <button class="btn btn-primary btn-sm" onclick="showModal('modalSupervisi')"><i class="fas fa-eye"></i> Catat Supervisi</button>
+        <button class="btn btn-secondary btn-sm" onclick="showModal('modalRefleksiKinerja')"><i class="fas fa-brain"></i> Refleksi Kinerja</button>
+      </div>
+      <div class="card"><div class="card-header"><div class="card-title"><i class="fas fa-clipboard-check"></i> Catatan Supervisi</div></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Pengawas</th><th>Fokus</th><th>Hasil</th><th>Tindak Lanjut</th><th class="no-print">Aksi</th></tr></thead><tbody id="tbodySupervisi"></tbody></table></div><div id="emptySupervisi" class="empty-state" style="display:none;"><i class="fas fa-clipboard-question"></i><p>Belum ada catatan</p></div></div>
+    </section>
+
+  </div><!-- /page-content -->
+</div><!-- /main-content -->
+
+<!-- ====== MODALS ====== -->
+<div class="modal-overlay" id="modalSiswa"><div class="modal modal-lg"><div class="modal-header"><h3 id="modalSiswaTitle">Tambah Siswa</h3><button class="btn-icon" onclick="hideModal('modalSiswa')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><input type="hidden" id="siswaEditId"><div class="form-row"><div class="form-group"><label class="form-label">NIS</label><input class="form-input" id="siswaNIS"></div><div class="form-group"><label class="form-label">Kelas</label><select class="form-select" id="siswaKelas"></select></div></div><div class="form-group"><label class="form-label">Nama Lengkap</label><input class="form-input" id="siswaNama"></div><div class="form-row"><div class="form-group"><label class="form-label">Jenis Kelamin</label><select class="form-select" id="siswaJK"><option value="">-- Pilih --</option><option>Laki-laki</option><option>Perempuan</option></select></div><div class="form-group"><label class="form-label">Tempat Lahir</label><input class="form-input" id="siswaTempatLahir"></div></div><div class="form-group"><label class="form-label">Tanggal Lahir</label><input type="date" class="form-input" id="siswaTglLahir"></div><div class="form-group"><label class="form-label">Alamat</label><textarea class="form-textarea" id="siswaAlamat"></textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Nama Orang Tua/Wali</label><input class="form-input" id="siswaOrtu"></div><div class="form-group"><label class="form-label">No. HP Orang Tua</label><input class="form-input" id="siswaHPOrtu"></div></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalSiswa')">Batal</button><button class="btn btn-primary" onclick="simpanSiswa()"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+
+<div class="modal-overlay" id="modalJadwal"><div class="modal"><div class="modal-header"><h3>Tambah Jadwal</h3><button class="btn-icon" onclick="hideModal('modalJadwal')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><input type="hidden" id="jadwalEditId"><div class="form-group"><label class="form-label">Hari</label><select class="form-select" id="jadwalHari"><option>Senin</option><option>Selasa</option><option>Rabu</option><option>Kamis</option><option>Jumat</option><option>Sabtu</option></select></div><div class="form-row"><div class="form-group"><label class="form-label">Jam Mulai</label><input type="time" class="form-input" id="jadwalJamMulai"></div><div class="form-group"><label class="form-label">Jam Selesai</label><input type="time" class="form-input" id="jadwalJamSelesai"></div></div><div class="form-group"><label class="form-label">Mata Pelajaran</label><select class="form-select" id="jadwalMapel"></select></div><div class="form-row"><div class="form-group"><label class="form-label">Kelas</label><select class="form-select" id="jadwalKelas"></select></div><div class="form-group"><label class="form-label">Ruangan</label><input class="form-input" id="jadwalRuangan"></div></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalJadwal')">Batal</button><button class="btn btn-primary" onclick="simpanJadwal()"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+
+<div class="modal-overlay" id="modalRPM"><div class="modal modal-lg"><div class="modal-header"><h3 id="modalRPMTitle">Buat RPM Baru</h3><button class="btn-icon" onclick="hideModal('modalRPM')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><input type="hidden" id="rpmEditId"><div class="form-row"><div class="form-group"><label class="form-label">Mata Pelajaran</label><select class="form-select" id="rpmMapel"></select></div><div class="form-group"><label class="form-label">Kelas</label><select class="form-select" id="rpmKelas"></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Fase</label><select class="form-select" id="rpmFase"><option value="B">B (Kelas 3-4)</option><option value="C">C (Kelas 5-6)</option></select></div><div class="form-group"><label class="form-label">Minggu Ke-</label><input type="number" class="form-input" id="rpmMinggu" min="1"></div></div><div class="form-group"><label class="form-label">Capaian Pembelajaran (CP)</label><textarea class="form-textarea" id="rpmCP" rows="3"></textarea></div><div class="form-group"><label class="form-label">Tujuan Pembelajaran (TP)</label><textarea class="form-textarea" id="rpmTP" rows="3"></textarea></div><div class="form-group"><label class="form-label">Materi</label><textarea class="form-textarea" id="rpmMateri" rows="2"></textarea></div><div class="form-group"><label class="form-label">Pengalaman Belajar</label><textarea class="form-textarea" id="rpmPengalaman" rows="3"></textarea></div><div class="form-group"><label class="form-label">Asesmen</label><textarea class="form-textarea" id="rpmAsesmen" rows="2"></textarea></div><div class="form-group"><label class="form-label">Diferensiasi</label><textarea class="form-textarea" id="rpmDiferensiasi" rows="2"></textarea></div><div class="form-group"><label class="form-label">Sumber & Media</label><input class="form-input" id="rpmSumber"></div><div class="form-group"><label class="form-label">Refleksi</label><textarea class="form-textarea" id="rpmRefleksi" rows="2"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalRPM')">Batal</button><button class="btn btn-primary" onclick="simpanRPM()"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+
+<div class="modal-overlay" id="modalJurnal"><div class="modal"><div class="modal-header"><h3>Tambah Jurnal</h3><button class="btn-icon" onclick="hideModal('modalJurnal')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><input type="hidden" id="jurnalEditId"><div class="form-group"><label class="form-label">Tanggal</label><input type="date" class="form-input" id="jurnalTgl"></div><div class="form-row"><div class="form-group"><label class="form-label">Jam</label><input type="time" class="form-input" id="jurnalJam"></div><div class="form-group"><label class="form-label">Mata Pelajaran</label><select class="form-select" id="jurnalMapel"></select></div></div><div class="form-group"><label class="form-label">Kelas</label><select class="form-select" id="jurnalKelas"></select></div><div class="form-group"><label class="form-label">Materi</label><input class="form-input" id="jurnalMateri"></div><div class="form-group"><label class="form-label">Kegiatan</label><textarea class="form-textarea" id="jurnalKegiatan" rows="3"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalJurnal')">Batal</button><button class="btn btn-primary" onclick="simpanJurnal()"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+
+<div class="modal-overlay" id="modalNilai"><div class="modal modal-lg"><div class="modal-header"><h3>Input Nilai</h3><button class="btn-icon" onclick="hideModal('modalNilai')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-row"><div class="form-group"><label class="form-label">Mata Pelajaran</label><select class="form-select" id="nilaiMapel" onchange="loadSiswaUntukNilai()"></select></div><div class="form-group"><label class="form-label">Kelas</label><select class="form-select" id="nilaiKelas" onchange="loadSiswaUntukNilai()"></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Jenis Asesmen</label><select class="form-select" id="nilaiJenis"><option value="formatif">Formatif</option><option value="sumatif">Sumatif</option><option value="diagnostik">Diagnostik</option></select></div><div class="form-group"><label class="form-label">Judul/Keterangan</label><input class="form-input" id="nilaiKeterangan"></div></div><div class="form-group"><label class="form-label">Nilai Per Siswa (terpisah dari data siswa)</label><div id="inputNilaiSiswa" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:12px;"><p style="color:var(--text-muted);font-size:13px;">Pilih mapel dan kelas dahulu</p></div></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalNilai')">Batal</button><button class="btn btn-primary" onclick="simpanNilai()"><i class="fas fa-save"></i> Simpan Semua</button></div></div></div>
+
+<div class="modal-overlay" id="modalLink"><div class="modal"><div class="modal-header"><h3>Tambah Link Digitalisasi</h3><button class="btn-icon" onclick="hideModal('modalLink')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><input type="hidden" id="linkEditId"><div class="form-group"><label class="form-label">Judul</label><input class="form-input" id="linkJudul"></div><div class="form-group"><label class="form-label">URL</label><input class="form-input" id="linkURL" placeholder="https://..."></div><div class="form-group"><label class="form-label">Kategori</label><select class="form-select" id="linkKategori"><option>Media Pembelajaran</option><option>Platform Asesmen</option><option>Arsip Dokumen</option><option>Referensi Guru</option><option>Lainnya</option></select></div><div class="form-group"><label class="form-label">Keterangan</label><input class="form-input" id="linkKet"></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalLink')">Batal</button><button class="btn btn-primary" onclick="simpanLink()"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+
+<div class="modal-overlay" id="modalRemedial"><div class="modal"><div class="modal-header"><h3>Program Remedial</h3><button class="btn-icon" onclick="hideModal('modalRemedial')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Siswa</label><select class="form-select" id="remSiswa"></select></div><div class="form-group"><label class="form-label">Mata Pelajaran</label><select class="form-select" id="remMapel"></select></div><div class="form-group"><label class="form-label">Kompetensi belum tuntas</label><textarea class="form-textarea" id="remKompetensi" rows="2"></textarea></div><div class="form-group"><label class="form-label">Bentuk Remedial</label><textarea class="form-textarea" id="remBentuk" rows="2"></textarea></div><div class="form-group"><label class="form-label">Tanggal</label><input type="date" class="form-input" id="remTgl"></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalRemedial')">Batal</button><button class="btn btn-primary" onclick="simpanTindakLanjut('Remedial')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+
+<div class="modal-overlay" id="modalPengayaan"><div class="modal"><div class="modal-header"><h3>Program Pengayaan</h3><button class="btn-icon" onclick="hideModal('modalPengayaan')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Siswa</label><select class="form-select" id="pengSiswa"></select></div><div class="form-group"><label class="form-label">Mata Pelajaran</label><select class="form-select" id="pengMapel"></select></div><div class="form-group"><label class="form-label">Bentuk Pengayaan</label><textarea class="form-textarea" id="pengBentuk" rows="3"></textarea></div><div class="form-group"><label class="form-label">Tanggal</label><input type="date" class="form-input" id="pengTgl"></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalPengayaan')">Batal</button><button class="btn btn-primary" onclick="simpanTindakLanjut('Pengayaan')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+
+<div class="modal-overlay" id="modalPendampingan"><div class="modal"><div class="modal-header"><h3>Pendampingan</h3><button class="btn-icon" onclick="hideModal('modalPendampingan')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Siswa</label><select class="form-select" id="pendSiswa"></select></div><div class="form-group"><label class="form-label">Masalah</label><textarea class="form-textarea" id="pendMasalah" rows="3"></textarea></div><div class="form-group"><label class="form-label">Bentuk Pendampingan</label><textarea class="form-textarea" id="pendBentuk" rows="2"></textarea></div><div class="form-group"><label class="form-label">Tanggal</label><input type="date" class="form-input" id="pendTgl"></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalPendampingan')">Batal</button><button class="btn btn-primary" onclick="simpanTindakLanjut('Pendampingan')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+
+<div class="modal-overlay" id="modalSupervisi"><div class="modal"><div class="modal-header"><h3>Catat Supervisi</h3><button class="btn-icon" onclick="hideModal('modalSupervisi')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Tanggal</label><input type="date" class="form-input" id="supTgl"></div><div class="form-group"><label class="form-label">Pengawas</label><input class="form-input" id="supPengawas"></div><div class="form-group"><label class="form-label">Fokus</label><input class="form-input" id="supFokus"></div><div class="form-group"><label class="form-label">Hasil</label><textarea class="form-textarea" id="supHasil" rows="3"></textarea></div><div class="form-group"><label class="form-label">Tindak Lanjut</label><textarea class="form-textarea" id="supTL" rows="2"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalSupervisi')">Batal</button><button class="btn btn-primary" onclick="simpanSupervisi()"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+
+<div class="modal-overlay" id="modalSetting"><div class="modal"><div class="modal-header"><h3>Pengaturan</h3><button class="btn-icon" onclick="hideModal('modalSetting')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Nama Guru</label><input class="form-input" id="settingNama"></div><div class="form-group"><label class="form-label">Kelas Wali</label><select class="form-select" id="settingWaliKelas"><option value="">-- Tidak --</option></select></div><div class="form-group"><label class="form-label">Semester</label><select class="form-select" id="settingSemester"><option value="1">Semester 1</option><option value="2">Semester 2</option></select></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalSetting')">Batal</button><button class="btn btn-primary" onclick="simpanSetting()"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+
+<!-- Modals Dokumen (textarea generik) -->
+<div class="modal-overlay" id="modalVisiMisi"><div class="modal modal-lg"><div class="modal-header"><h3>Visi, Misi, dan Tujuan</h3><button class="btn-icon" onclick="hideModal('modalVisiMisi')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Visi</label><textarea class="form-textarea" id="docVisi" rows="3"></textarea></div><div class="form-group"><label class="form-label">Misi</label><textarea class="form-textarea" id="docMisi" rows="4"></textarea></div><div class="form-group"><label class="form-label">Tujuan</label><textarea class="form-textarea" id="docTujuan" rows="4"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalVisiMisi')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('visiMisi')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalStrukturKurikulum"><div class="modal modal-lg"><div class="modal-header"><h3>Struktur Kurikulum Merdeka</h3><button class="btn-icon" onclick="hideModal('modalStrukturKurikulum')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Struktur Kurikulum</label><textarea class="form-textarea" id="docStrukturKurikulum" rows="10"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalStrukturKurikulum')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('strukturKurikulum')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalProfilLulusan"><div class="modal modal-lg"><div class="modal-header"><h3>Dimensi Profil Pelajar Pancasila</h3><button class="btn-icon" onclick="hideModal('modalProfilLulusan')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Deskripsi 6 Dimensi P5</label><textarea class="form-textarea" id="docProfilLulusan" rows="12"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalProfilLulusan')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('profilLulusan')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalPrinsipPemb"><div class="modal modal-lg"><div class="modal-header"><h3>Prinsip Pembelajaran Mendalam</h3><button class="btn-icon" onclick="hideModal('modalPrinsipPemb')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Prinsip & Kerangka</label><textarea class="form-textarea" id="docPrinsipPemb" rows="10"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalPrinsipPemb')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('prinsipPemb')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalTeknologi"><div class="modal"><div class="modal-header"><h3>Pemanfaatan Teknologi Digital</h3><button class="btn-icon" onclick="hideModal('modalTeknologi')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Deskripsi</label><textarea class="form-textarea" id="docTeknologi" rows="8"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalTeknologi')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('teknologi')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalKarakteristik"><div class="modal modal-lg"><div class="modal-header"><h3>Karakteristik</h3><button class="btn-icon" onclick="hideModal('modalKarakteristik')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Karakteristik Satuan Pendidikan</label><textarea class="form-textarea" id="docKarSekolah" rows="5"></textarea></div><div class="form-group"><label class="form-label">Karakteristik Peserta Didik</label><textarea class="form-textarea" id="docKarSiswa" rows="5"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalKarakteristik')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('karakteristik')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalCP"><div class="modal modal-lg"><div class="modal-header"><h3>Capaian Pembelajaran</h3><button class="btn-icon" onclick="hideModal('modalCP')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">CP per Mata Pelajaran</label><textarea class="form-textarea" id="docCP" rows="12"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalCP')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('cp')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalATP"><div class="modal modal-lg"><div class="modal-header"><h3>Alur Tujuan Pembelajaran</h3><button class="btn-icon" onclick="hideModal('modalATP')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">ATP</label><textarea class="form-textarea" id="docATP" rows="12"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalATP')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('atp')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalProta"><div class="modal modal-lg"><div class="modal-header"><h3>Program Tahunan</h3><button class="btn-icon" onclick="hideModal('modalProta')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Prota</label><textarea class="form-textarea" id="docProta" rows="12"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalProta')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('prota')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalPromes"><div class="modal modal-lg"><div class="modal-header"><h3>Program Semester</h3><button class="btn-icon" onclick="hideModal('modalPromes')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Promes</label><textarea class="form-textarea" id="docPromes" rows="12"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalPromes')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('promes')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalPemetaan"><div class="modal modal-lg"><div class="modal-header"><h3>Pemetaan</h3><button class="btn-icon" onclick="hideModal('modalPemetaan')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Pemetaan Materi</label><textarea class="form-textarea" id="docPemetaanMateri" rows="5"></textarea></div><div class="form-group"><label class="form-label">Pemetaan TP</label><textarea class="form-textarea" id="docPemetaanTP" rows="5"></textarea></div><div class="form-group"><label class="form-label">Pemetaan P5</label><textarea class="form-textarea" id="docPemetaanP5" rows="5"></textarea></div><div class="form-group"><label class="form-label">Pemetaan PM</label><textarea class="form-textarea" id="docPemetaanPM" rows="5"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalPemetaan')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('pemetaan')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalDiferensiasi"><div class="modal"><div class="modal-header"><h3>Pembelajaran Berdiferensiasi</h3><button class="btn-icon" onclick="hideModal('modalDiferensiasi')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Program</label><textarea class="form-textarea" id="docDiferensiasi" rows="10"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalDiferensiasi')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('diferensiasi')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalLiterasi"><div class="modal"><div class="modal-header"><h3>Literasi & Numerasi</h3><button class="btn-icon" onclick="hideModal('modalLiterasi')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Program</label><textarea class="form-textarea" id="docLiterasi" rows="10"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalLiterasi')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('literasi')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalProgramAsesmen"><div class="modal"><div class="modal-header"><h3>Program Asesmen</h3><button class="btn-icon" onclick="hideModal('modalProgramAsesmen')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Program</label><textarea class="form-textarea" id="docProgramAsesmen" rows="10"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalProgramAsesmen')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('programAsesmen')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalKisiKisi"><div class="modal modal-lg"><div class="modal-header"><h3>Kisi-Kisi Asesmen</h3><button class="btn-icon" onclick="hideModal('modalKisiKisi')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Kisi-Kisi</label><textarea class="form-textarea" id="docKisiKisi" rows="12"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalKisiKisi')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('kisiKisi')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalSoal"><div class="modal modal-lg"><div class="modal-header"><h3>Bank Soal</h3><button class="btn-icon" onclick="hideModal('modalSoal')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Soal</label><textarea class="form-textarea" id="docSoal" rows="12"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalSoal')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('soal')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalRubrik"><div class="modal"><div class="modal-header"><h3>Rubrik Penilaian</h3><button class="btn-icon" onclick="hideModal('modalRubrik')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Rubrik</label><textarea class="form-textarea" id="docRubrik" rows="10"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalRubrik')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('rubrik')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalKasus"><div class="modal"><div class="modal-header"><h3>Catatan Kasus</h3><button class="btn-icon" onclick="hideModal('modalKasus')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Siswa</label><select class="form-select" id="kasusSiswa"></select></div><div class="form-group"><label class="form-label">Tanggal</label><input type="date" class="form-input" id="kasusTgl"></div><div class="form-group"><label class="form-label">Deskripsi</label><textarea class="form-textarea" id="kasusDesk" rows="4"></textarea></div><div class="form-group"><label class="form-label">Tindakan</label><textarea class="form-textarea" id="kasusTindakan" rows="3"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalKasus')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('kasus')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalBimbingan"><div class="modal"><div class="modal-header"><h3>Bimbingan Konseling</h3><button class="btn-icon" onclick="hideModal('modalBimbingan')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Siswa</label><select class="form-select" id="bimSiswa"></select></div><div class="form-group"><label class="form-label">Tanggal</label><input type="date" class="form-input" id="bimTgl"></div><div class="form-group"><label class="form-label">Catatan</label><textarea class="form-textarea" id="bimCatatan" rows="5"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalBimbingan')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('bimbingan')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalKomunikasi"><div class="modal"><div class="modal-header"><h3>Komunikasi Orang Tua</h3><button class="btn-icon" onclick="hideModal('modalKomunikasi')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Siswa</label><select class="form-select" id="komSiswa"></select></div><div class="form-group"><label class="form-label">Tanggal</label><input type="date" class="form-input" id="komTgl"></div><div class="form-group"><label class="form-label">Isi Komunikasi</label><textarea class="form-textarea" id="komIsi" rows="5"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalKomunikasi')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('komunikasi')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalPrestasi"><div class="modal"><div class="modal-header"><h3>Prestasi Siswa</h3><button class="btn-icon" onclick="hideModal('modalPrestasi')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Siswa</label><select class="form-select" id="presSiswa"></select></div><div class="form-group"><label class="form-label">Tanggal</label><input type="date" class="form-input" id="presTgl"></div><div class="form-group"><label class="form-label">Prestasi</label><textarea class="form-textarea" id="presIsi" rows="4"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalPrestasi')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('prestasi')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalRefleksiKinerja"><div class="modal"><div class="modal-header"><h3>Refleksi Kinerja Guru</h3><button class="btn-icon" onclick="hideModal('modalRefleksiKinerja')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><div class="form-group"><label class="form-label">Periode</label><input class="form-input" id="refKinerjaPeriode"></div><div class="form-group"><label class="form-label">Refleksi</label><textarea class="form-textarea" id="refKinerjaIsi" rows="8"></textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalRefleksiKinerja')">Tutup</button><button class="btn btn-primary" onclick="simpanDokumen('refleksiKinerja')"><i class="fas fa-save"></i> Simpan</button></div></div></div>
+
+<!-- Konfirmasi Hapus -->
+<div class="modal-overlay" id="modalKonfirmasi"><div class="modal" style="max-width:420px;"><div class="modal-header"><h3>Konfirmasi</h3><button class="btn-icon" onclick="hideModal('modalKonfirmasi')"><i class="fas fa-xmark"></i></button></div><div class="modal-body"><p id="konfirmasiText" style="font-size:14px;color:var(--text-secondary);">Hapus data ini?</p></div><div class="modal-footer"><button class="btn btn-secondary" onclick="hideModal('modalKonfirmasi')">Batal</button><button class="btn btn-danger" id="konfirmasiBtn" onclick="konfirmasiAksi()"><i class="fas fa-trash"></i> Hapus</button></div></div></div>
+
+<script>
+/* ============================
+   FIREBASE
+   ============================ */
+const firebaseConfig={apiKey:"AIzaSyBwYUh9OqVOac1eScXZkYBEMTTmu-1we20",authDomain:"ulangan-harian-digital.firebaseapp.com",databaseURL:"https://ulangan-harian-digital-default-rtdb.europe-west1.firebasedatabase.app",projectId:"ulangan-harian-digital",storageBucket:"ulangan-harian-digital.firebasestorage.app",messagingSenderId:"998856001022",appId:"1:998856001022:web:41386d4977fe68c42bacaf",measurementId:"G-73532949QL"};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+
+/* ============================
+   KONSTANTA
+   ============================ */
+const KELAS=['I','II','III','IV','V','VI'];
+const MAPEL=['Pendidikan Agama Islam dan Budi Pekerti','Pendidikan Pancasila','Bahasa Indonesia','Matematika','Ilmu Pengetahuan Alam dan Sosial (IPAS)','Pendidikan Jasmani, Olahraga, dan Kesehatan (PJOK)','Seni Budaya','Bahasa Sunda'];
+const MAPEL_S={'Pendidikan Agama Islam dan Budi Pekerti':'PAI','Pendidikan Pancasila':'PKn','Bahasa Indonesia':'B.Indo','Matematika':'Mat','Ilmu Pengetahuan Alam dan Sosial (IPAS)':'IPAS','Pendidikan Jasmani, Olahraga, dan Kesehatan (PJOK)':'PJOK','Seni Budaya':'Seni','Bahasa Sunda':'B.Sunda'};
+const HARI=['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const LINK_IC={'Media Pembelajaran':'fa-play-circle','Platform Asesmen':'fa-clipboard-check','Arsip Dokumen':'fa-folder-open','Referensi Guru':'fa-book','Lainnya':'fa-link'};
+const LINK_CL={'Media Pembelajaran':'var(--accent)','Platform Asesmen':'var(--info)','Arsip Dokumen':'var(--gold)','Referensi Guru':'#a78bfa','Lainnya':'var(--text-muted)'};
+
+/* ============================
+   STATE
+   ============================ */
+let currentPage='dashboard',currentKelas='I',currentHari='Senin',currentMapelRPM=MAPEL[0],currentMapelNilai=MAPEL[0];
+let allSiswa={},allNilai={},allJadwal={},allRPM={},allJurnal={},allKehadiran={},allLinks={},allTindakLanjut={},allSupervisi={},allDokumen={};
+let konfirmasiCallback=null,settingData={nama:'',waliKelas:'',semester:'1'};
+let sekolahData={};
+
+/* ============================
+   NAVIGASI
+   ============================ */
+const NAV=[
+  {id:'dashboard',icon:'fa-gauge-high',label:'Dashboard'},
+  {group:'A. Administrasi Umum',items:[
+    {id:'identitas-guru',icon:'fa-id-card',label:'Identitas Guru'},
+    {id:'identitas-sekolah',icon:'fa-school',label:'Identitas Sekolah'},
+    {id:'peserta-didik',icon:'fa-users',label:'Data Peserta Didik'},
+    {id:'jadwal',icon:'fa-calendar-days',label:'Jadwal Pelajaran'},
+  ]},
+  {group:'B. Kurikulum',items:[
+    {id:'kurikulum',icon:'fa-book-open',label:'Kurikulum & Pembelajaran'},
+    {id:'perencanaan',icon:'fa-map',label:'Perencanaan'},
+  ]},
+  {group:'C. Pelaksanaan',items:[
+    {id:'rpm',icon:'fa-file-lines',label:'RPM'},
+    {id:'jurnal',icon:'fa-book-open-reader',label:'Jurnal Harian'},
+    {id:'kehadiran',icon:'fa-clipboard-user',label:'Kehadiran'},
+  ]},
+  {group:'D. Asesmen',items:[
+    {id:'nilai',icon:'fa-chart-column',label:'Penilaian & Nilai'},
+    {id:'asesmen',icon:'fa-clipboard-check',label:'Dokumen Asesmen'},
+  ]},
+  {group:'E. Tindak Lanjut & Wali',items:[
+    {id:'tindak-lanjut',icon:'fa-rotate-left',label:'Tindak Lanjut'},
+    {id:'wali-kelas',icon:'fa-user-shield',label:'Wali Kelas'},
+  ]},
+  {group:'F. Lainnya',items:[
+    {id:'supervisi',icon:'fa-eye',label:'Supervisi'},
+    {id:'portal-digital',icon:'fa-globe',label:'Portal Digitalisasi'},
+  ]},
+];
+
+function buildSidebar(){
+  const nav=document.getElementById('sidebarNav');let h='';
+  NAV.forEach(i=>{if(i.group){h+=`<div class="nav-group-label">${i.group}</div>`;i.items.forEach(s=>{h+=`<div class="nav-item" data-page="${s.id}" onclick="navigateTo('${s.id}')"><i class="fas ${s.icon}"></i><span>${s.label}</span></div>`;});}else{h+=`<div class="nav-item" data-page="${i.id}" onclick="navigateTo('${i.id}')"><i class="fas ${i.icon}"></i><span>${i.label}</span></div>`;}});
+  nav.innerHTML=h;
+}
+
+const TITLES={'dashboard':'Dashboard','peserta-didik':'Data Peserta Didik','identitas-guru':'Identitas Guru','identitas-sekolah':'Identitas Satuan Pendidikan','jadwal':'Jadwal Pelajaran','rpm':'Rencana Pembelajaran Mendalam (RPM)','jurnal':'Jurnal Harian','nilai':'Penilaian & Nilai','kehadiran':'Kehadiran Siswa','portal-digital':'Portal Digitalisasi','kurikulum':'Dokumen Kurikulum','perencanaan':'Perencanaan Pembelajaran','asesmen':'Dokumen Asesmen','tindak-lanjut':'Tindak Lanjut','wali-kelas':'Administrasi Wali Kelas','supervisi':'Supervisi & Pengembangan'};
+
+function navigateTo(p){
+  currentPage=p;
+  document.querySelectorAll('.page-section').forEach(s=>s.classList.remove('active','printing'));
+  const t=document.getElementById('page-'+p);if(t)t.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const ni=document.querySelector(`.nav-item[data-page="${p}"]`);if(ni)ni.classList.add('active');
+  document.getElementById('pageTitle').textContent=TITLES[p]||p;
+  document.getElementById('sidebar').classList.remove('open');
+  renderPage(p);
+}
+
+function renderPage(p){
+  switch(p){
+    case'dashboard':renderDashboard();break;case'peserta-didik':renderTabKelas();renderSiswa();break;
+    case'jadwal':renderTabHari();renderJadwal();break;case'rpm':renderTabMapelRPM();renderRPM();break;
+    case'jurnal':renderJurnal();break;case'nilai':renderTabMapelNilai();renderNilai();break;
+    case'kehadiran':renderKehadiran();break;case'portal-digital':renderLinks();break;
+    case'tindak-lanjut':renderTindakLanjut();break;case'wali-kelas':renderRekapWali();break;
+    case'supervisi':renderSupervisi();break;
+  }
+}
+
+/* ============================
+   CETAK PDF
+   ============================ */
+function cetakHalaman(pageId, judul) {
+  // Update print header
+  document.getElementById('phSekolah').textContent = sekolahData.nama || 'SD NEGERI';
+  let alamat = '';
+  if (sekolahData.alamat) alamat += sekolahData.alamat;
+  if (sekolahData.kec) alamat += ', Kec. ' + sekolahData.kec;
+  if (sekolahData.kab) alamat += ', ' + sekolahData.kab;
+  if (sekolahData.prov) alamat += ', ' + sekolahData.prov;
+  document.getElementById('phAlamat').textContent = alamat || 'Alamat Sekolah';
+  document.getElementById('phJudul').textContent = judul.toUpperCase();
+  let sub = 'Tahun Ajaran 2026/2027 — Kurikulum Merdeka';
+  if (settingData.semester === '2') sub += ' — Semester 2 (Genap)';
+  else sub += ' — Semester 1 (Ganjil)';
+  if (settingData.nama) sub += '\nGuru: ' + settingData.nama;
+  document.getElementById('phSub').textContent = sub;
+
+  // Tandai halaman yang akan dicetak
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('printing'));
+  const target = document.getElementById('page-' + pageId);
+  if (target) target.classList.add('printing');
+
+  // Untuk halaman dengan tab, tambahkan info tab ke judul
+  if (pageId === 'peserta-didik') {
+    document.getElementById('phJudul').textContent = 'DAFTAR PESERTA DIDIK KELAS ' + currentKelas;
+  } else if (pageId === 'jadwal') {
+    document.getElementById('phJudul').textContent = 'JADWAL PELAJARAN HARI ' + currentHari.toUpperCase();
+  } else if (pageId === 'rpm') {
+    document.getElementById('phJudul').textContent = 'RENCANA PEMBELAJARAN MENDALAM (RPM) — ' + (MAPEL_S[currentMapelRPM] || currentMapelRPM);
+  } else if (pageId === 'nilai') {
+    const jenis = document.getElementById('filterJenisNilai').value;
+    document.getElementById('phJudul').textContent = 'DAFTAR NILAI ' + jenis.toUpperCase() + ' — ' + (MAPEL_S[currentMapelNilai] || currentMapelNilai);
+  }
+
+  // Tambahkan tanda tangan jika belum ada
+  let signDiv = document.getElementById('printSignArea');
+  if (!signDiv) {
+    signDiv = document.createElement('div');
+    signDiv.id = 'printSignArea';
+    target.appendChild(signDiv);
+  }
+  const guruNama = settingData.nama || '..................................';
+  const guruNIP = document.getElementById('guruNIP')?.value || '..................................';
+  signDiv.innerHTML = `<div class="sign-area">
+    <div class="sign-box"><div class="sign-title">Mengetahui,</div><div class="sign-title">Kepala Sekolah</div><div class="sign-space"></div><div class="sign-name">${sekolahData.kepsek || '..................................'}</div><div class="sign-nip">NIP. ${sekolahData.nipKepsek || '..................................'}</div></div>
+    <div class="sign-box"><div class="sign-space"></div><div class="sign-title">Guru Kelas</div><div class="sign-space"></div><div class="sign-name">${guruNama}</div><div class="sign-nip">NIP. ${guruNIP}</div></div>
+  </div>`;
+
+  // Trigger print
+  setTimeout(() => { window.print(); }, 200);
+}
+
+/* ============================
+   FIREBASE LISTENERS
+   ============================ */
+function initListeners(){
+  KELAS.forEach(k=>{db.ref('siswa/'+k).on('value',s=>{allSiswa[k]=s.val()||{};if(currentPage==='peserta-didik')renderSiswa();if(currentPage==='kehadiran')renderKehadiran();if(currentPage==='wali-kelas')renderRekapWali();});});
+  db.ref('jadwal').on('value',s=>{allJadwal=s.val()||{};if(currentPage==='jadwal')renderJadwal();});
+  db.ref('rpm').on('value',s=>{allRPM=s.val()||{};if(currentPage==='rpm')renderRPM();});
+  db.ref('jurnal').on('value',s=>{allJurnal=s.val()||{};if(currentPage==='jurnal')renderJurnal();});
+  db.ref('nilai').on('value',s=>{allNilai=s.val()||{};if(currentPage==='nilai')renderNilai();});
+  db.ref('kehadiran').on('value',s=>{allKehadiran=s.val()||{};if(currentPage==='kehadiran')renderKehadiran();});
+  db.ref('links').on('value',s=>{allLinks=s.val()||{};if(currentPage==='portal-digital')renderLinks();});
+  db.ref('tindakLanjut').on('value',s=>{allTindakLanjut=s.val()||{};if(currentPage==='tindak-lanjut')renderTindakLanjut();});
+  db.ref('supervisi').on('value',s=>{allSupervisi=s.val()||{};if(currentPage==='supervisi')renderSupervisi();});
+  db.ref('dokumen').on('value',s=>{allDokumen=s.val()||{};});
+  // Identitas
+  db.ref('identitas/guru').once('value',s=>{const d=s.val()||{};['guruNama','guruNIP','guruNUPTK','guruJabatan','guruTTL','guruJK','guruGolongan','guruTugasTambahan','guruEmail','guruHP','guruAlamat'].forEach(k=>{const fk=k.replace('guru','').toLowerCase();const map={nama:'nama',nip:'nip',nuptk:'nuptk',jabatan:'jabatan',ttl:'ttl',jk:'jk',golongan:'golongan',tugastambahan:'tugasTambahan',email:'email',hp:'hp',alamat:'alamat'};document.getElementById(k).value=d[map[fk]]||'';});});
+  db.ref('identitas/sekolah').once('value',s=>{sekolahData=s.val()||{};const d=sekolahData;document.getElementById('sekNama').value=d.nama||'';document.getElementById('sekNPSN').value=d.npsn||'';document.getElementById('sekAlamat').value=d.alamat||'';document.getElementById('sekDesa').value=d.desa||'';document.getElementById('sekKec').value=d.kec||'';document.getElementById('sekKab').value=d.kab||'';document.getElementById('sekProv').value=d.prov||'';document.getElementById('sekPos').value=d.pos||'';document.getElementById('sekTelp').value=d.telp||'';document.getElementById('sekEmail').value=d.email||'';document.getElementById('sekKepsek').value=d.kepsek||'';document.getElementById('sekNIPKepsek').value=d.nipKepsek||'';});
+  db.ref('setting').once('value',s=>{settingData=s.val()||{nama:'',waliKelas:'',semester:'1'};document.getElementById('settingNama').value=settingData.nama||'';document.getElementById('settingSemester').value=settingData.semester||'1';});
+  // Load dokumen
+  const dk=['visiMisi','strukturKurikulum','profilLulusan','prinsipPemb','teknologi','cp','atp','prota','promes','diferensiasi','literasi','programAsesmen','kisiKisi','soal','rubrik'];
+  dk.forEach(k=>{db.ref('dokumen/'+k).once('value',s=>{const el=document.getElementById('doc'+k.charAt(0).toUpperCase()+k.slice(1));if(el&&s.val())el.value=s.val();});});
+  db.ref('dokumen/karSekolah').once('value',s=>{if(s.val())document.getElementById('docKarSekolah').value=s.val();});
+  db.ref('dokumen/karSiswa').once('value',s=>{if(s.val())document.getElementById('docKarSiswa').value=s.val();});
+  ['PemetaanMateri','PemetaanTP','PemetaanP5','PemetaanPM'].forEach(k=>{db.ref('dokumen/'+k).once('value',s=>{const el=document.getElementById('doc'+k);if(el&&s.val())el.value=s.val();});});
+}
+
+/* ============================
+   UTILITY
+   ============================ */
+function gid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
+function showToast(m,t='success'){const c=document.getElementById('toastContainer'),e=document.createElement('div');e.className='toast toast-'+t;const ic={success:'fa-check-circle',error:'fa-exclamation-circle',info:'fa-info-circle'};e.innerHTML=`<i class="fas ${ic[t]}"></i><span>${m}</span>`;c.appendChild(e);setTimeout(()=>{e.style.opacity='0';e.style.transform='translateX(40px)';e.style.transition='all .3s';setTimeout(()=>e.remove(),300);},3000);}
+function showModal(id){document.getElementById(id).classList.add('show');populateSiswaSelects();populateMapelSelects();populateKelasSelects();}
+function hideModal(id){document.getElementById(id).classList.remove('show');}
+function konfirmasiHapus(t,cb){document.getElementById('konfirmasiText').textContent=t;konfirmasiCallback=cb;showModal('modalKonfirmasi');}
+function konfirmasiAksi(){if(konfirmasiCallback)konfirmasiCallback();konfirmasiCallback=null;hideModal('modalKonfirmasi');}
+function ft(d){if(!d)return'-';return new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
+function populateSiswaSelects(){['remSiswa','pengSiswa','pendSiswa','kasusSiswa','bimSiswa','komSiswa','presSiswa'].forEach(sid=>{const el=document.getElementById(sid);if(!el)return;let h='<option value="">-- Pilih --</option>';KELAS.forEach(k=>{Object.entries(allSiswa[k]||{}).forEach(([id,s])=>{h+=`<option value="${id}" data-kelas="${k}">${s.nama} (Kelas ${k})</option>`;});});el.innerHTML=h;});}
+function populateMapelSelects(){['jadwalMapel','jurnalMapel','nilaiMapel','rpmMapel','remMapel','pengMapel'].forEach(sid=>{const el=document.getElementById(sid);if(!el)return;el.innerHTML=MAPEL.map(m=>`<option value="${m}">${m}</option>`).join('');});}
+function populateKelasSelects(){['siswaKelas','jadwalKelas','jurnalKelas','nilaiKelas','rpmKelas','settingWaliKelas','filterKelasHadir'].forEach(sid=>{const el=document.getElementById(sid);if(!el)return;const cv=el.value;let h=KELAS.map(k=>`<option value="${k}">Kelas ${k}</option>`).join('');if(sid==='settingWaliKelas'){h='<option value="">-- Tidak --</option>'+h;el.value=settingData.waliKelas||'';}else{el.innerHTML=h;if(cv)el.value=cv;}});}
+
+/* ============================
+   DASHBOARD
+   ============================ */
+function renderDashboard(){
+  let ts=0;KELAS.forEach(k=>{ts+=Object.keys(allSiswa[k]||{}).length;});
+  const tr=Object.keys(allRPM).length,tn=Object.keys(allNilai).length,tj=Object.keys(allJurnal).length;
+  document.getElementById('statGrid').innerHTML=`
+    <div class="stat-card"><div class="stat-icon" style="background:var(--accent-glow);color:var(--accent);"><i class="fas fa-users"></i></div><div class="stat-info"><h3>${ts}</h3><p>Total Peserta Didik</p></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:var(--gold-soft);color:var(--gold);"><i class="fas fa-file-lines"></i></div><div class="stat-info"><h3>${tr}</h3><p>RPM Dibuat</p></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:var(--info-soft);color:var(--info);"><i class="fas fa-chart-column"></i></div><div class="stat-info"><h3>${tn}</h3><p>Entri Nilai</p></div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:rgba(167,139,250,0.1);color:#a78bfa;"><i class="fas fa-book-open-reader"></i></div><div class="stat-info"><h3>${tj}</h3><p>Jurnal Harian</p></div></div>`;
+  let act=[];Object.values(allRPM).forEach(r=>{act.push({tgl:r.createdAt||'',text:`RPM ${MAPEL_S[r.mapel]||r.mapel||''} Kelas ${r.kelas||''}`,icon:'fa-file-lines',color:'var(--gold)'});});
+  Object.values(allJurnal).forEach(j=>{act.push({tgl:j.tgl||'',text:`Jurnal ${MAPEL_S[j.mapel]||j.mapel||''} Kelas ${j.kelas||''}`,icon:'fa-book-open-reader',color:'var(--info)'});});
+  act.sort((a,b)=>(b.tgl||'').localeCompare(a.tgl||''));act=act.slice(0,8);
+  if(!act.length){document.getElementById('recentActivity').innerHTML='<div class="empty-state"><i class="fas fa-inbox"></i><p>Belum ada aktivitas</p></div>';return;}
+  document.getElementById('recentActivity').innerHTML=act.map(a=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);"><div style="width:34px;height:34px;border-radius:8px;background:${a.color}15;color:${a.color};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;"><i class="fas ${a.icon}"></i></div><div style="flex:1;"><p style="font-size:13px;font-weight:500;">${a.text}</p><p style="font-size:11px;color:var(--text-muted);">${ft(a.tgl)}</p></div></div>`).join('');
+}
+
+/* ============================
+   PESERTA DIDIK
+   ============================ */
+function renderTabKelas(){document.getElementById('tabKelas').innerHTML=KELAS.map(k=>`<div class="tab-item ${currentKelas===k?'active':''}" onclick="currentKelas='${k}';renderTabKelas();renderSiswa();">Kelas ${k}</div>`).join('');}
+function renderSiswa(){
+  const data=allSiswa[currentKelas]||{},keys=Object.keys(data),tbody=document.getElementById('tbodySiswa'),empty=document.getElementById('emptySiswa');
+  if(!keys.length){tbody.innerHTML='';empty.style.display='block';tbody.closest('.table-wrap').style.display='none';return;}
+  empty.style.display='none';tbody.closest('.table-wrap').style.display='block';
+  tbody.innerHTML=keys.map((id,i)=>{const s=data[id];return`<tr><td>${i+1}</td><td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${s.nis||'-'}</td><td style="font-weight:600;color:var(--text-primary);">${s.nama||'-'}</td><td><span class="badge ${s.jk==='Laki-laki'?'badge-blue':'badge-green'}">${s.jk||'-'}</span></td><td>${s.tempatLahir||'-'}, ${ft(s.tglLahir)}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.alamat||'-'}</td><td>${s.ortu||'-'}</td><td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${s.hpOrtu||'-'}</td><td class="no-print" style="white-space:nowrap;"><button class="btn-icon" style="width:30px;height:30px;font-size:12px;" onclick="editSiswa('${id}')"><i class="fas fa-pen"></i></button> <button class="btn-icon" style="width:30px;height:30px;font-size:12px;color:var(--danger);" onclick="hapusSiswa('${id}')"><i class="fas fa-trash"></i></button></td></tr>`;}).join('');
+}
+function simpanSiswa(){const eid=document.getElementById('siswaEditId').value,data={nis:document.getElementById('siswaNIS').value.trim(),kelas:document.getElementById('siswaKelas').value,nama:document.getElementById('siswaNama').value.trim(),jk:document.getElementById('siswaJK').value,tempatLahir:document.getElementById('siswaTempatLahir').value.trim(),tglLahir:document.getElementById('siswaTglLahir').value,alamat:document.getElementById('siswaAlamat').value.trim(),ortu:document.getElementById('siswaOrtu').value.trim(),hpOrtu:document.getElementById('siswaHPOrtu').value.trim()};if(!data.nama){showToast('Nama wajib diisi','error');return;}const k=data.kelas||currentKelas;const ref=eid?db.ref('siswa/'+k+'/'+eid):db.ref('siswa/'+k).push();ref.set(data).then(()=>{showToast(eid?'Diperbarui':'Ditambahkan');hideModal('modalSiswa');clearFormSiswa();}).catch(e=>showToast('Gagal: '+e.message,'error'));}
+function editSiswa(id){const d=(allSiswa[currentKelas]||{})[id];if(!d)return;document.getElementById('modalSiswaTitle').textContent='Edit Siswa';document.getElementById('siswaEditId').value=id;document.getElementById('siswaNIS').value=d.nis||'';document.getElementById('siswaKelas').value=d.kelas||currentKelas;document.getElementById('siswaNama').value=d.nama||'';document.getElementById('siswaJK').value=d.jk||'';document.getElementById('siswaTempatLahir').value=d.tempatLahir||'';document.getElementById('siswaTglLahir').value=d.tglLahir||'';document.getElementById('siswaAlamat').value=d.alamat||'';document.getElementById('siswaOrtu').value=d.ortu||'';document.getElementById('siswaHPOrtu').value=d.hpOrtu||'';showModal('modalSiswa');}
+function hapusSiswa(id){konfirmasiHapus(`Hapus siswa "${(allSiswa[currentKelas]||{})[id]?.nama||''}"?`,()=>db.ref('siswa/'+currentKelas+'/'+id).remove().then(()=>showToast('Dihapus')).catch(e=>showToast('Gagal','error')));}
+function clearFormSiswa(){document.getElementById('modalSiswaTitle').textContent='Tambah Siswa';document.getElementById('siswaEditId').value='';['siswaNIS','siswaNama','siswaTempatLahir','siswaTglLahir','siswaAlamat','siswaOrtu','siswaHPOrtu'].forEach(id=>document.getElementById(id).value='');document.getElementById('siswaJK').value='';document.getElementById('siswaKelas').value=currentKelas;}
+function exportSiswa(){let csv='No,NIS,Nama,JK,Tempat Lahir,Tgl Lahir,Alamat,Ortu,HP Ortu\n';KELAS.forEach(k=>{Object.values(allSiswa[k]||{}).forEach((s,i)=>{csv+=`${i+1},"${s.nis||''}","${s.nama||''}","${s.jk||''}","${s.tempatLahir||''}","${s.tglLahir||''}","${s.alamat||''}","${s.ortu||''}","${s.hpOrtu||''}"\n`;});});const b=new Blob([csv],{type:'text/csv'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='data_siswa.csv';a.click();URL.revokeObjectURL(u);showToast('Export berhasil');}
+
+/* ============================
+   IDENTITAS
+   ============================ */
+function simpanIdentitasGuru(){const d={nama:document.getElementById('guruNama').value.trim(),nip:document.getElementById('guruNIP').value.trim(),nuptk:document.getElementById('guruNUPTK').value.trim(),jabatan:document.getElementById('guruJabatan').value.trim(),ttl:document.getElementById('guruTTL').value.trim(),jk:document.getElementById('guruJK').value,golongan:document.getElementById('guruGolongan').value.trim(),tugasTambahan:document.getElementById('guruTugasTambahan').value.trim(),email:document.getElementById('guruEmail').value.trim(),hp:document.getElementById('guruHP').value.trim(),alamat:document.getElementById('guruAlamat').value.trim()};db.ref('identitas/guru').set(d).then(()=>showToast('Tersimpan')).catch(e=>showToast('Gagal','error'));}
+function simpanIdentitasSekolah(){sekolahData={nama:document.getElementById('sekNama').value.trim(),npsn:document.getElementById('sekNPSN').value.trim(),alamat:document.getElementById('sekAlamat').value.trim(),desa:document.getElementById('sekDesa').value.trim(),kec:document.getElementById('sekKec').value.trim(),kab:document.getElementById('sekKab').value.trim(),prov:document.getElementById('sekProv').value.trim(),pos:document.getElementById('sekPos').value.trim(),telp:document.getElementById('sekTelp').value.trim(),email:document.getElementById('sekEmail').value.trim(),kepsek:document.getElementById('sekKepsek').value.trim(),nipKepsek:document.getElementById('sekNIPKepsek').value.trim()};db.ref('identitas/sekolah').set(sekolahData).then(()=>showToast('Tersimpan')).catch(e=>showToast('Gagal','error'));}
+
+/* ============================
+   JADWAL
+   ============================ */
+function renderTabHari(){document.getElementById('tabHari').innerHTML=HARI.map(h=>`<div class="tab-item ${currentHari===h?'active':''}" onclick="currentHari='${h}';renderTabHari();renderJadwal();">${h}</div>`).join('');}
+function renderJadwal(){const items=Object.entries(allJadwal).filter(([,j])=>j.hari===currentHari).sort((a,b)=>(a[1].jamMulai||'').localeCompare(b[1].jamMulai||''));const tbody=document.getElementById('tbodyJadwal'),empty=document.getElementById('emptyJadwal');if(!items.length){tbody.innerHTML='';empty.style.display='block';tbody.closest('.table-wrap').style.display='none';return;}empty.style.display='none';tbody.closest('.table-wrap').style.display='block';tbody.innerHTML=items.map(([id,j])=>`<tr><td style="font-family:'JetBrains Mono',monospace;font-weight:600;">${j.jamMulai||''} - ${j.jamSelesai||''}</td><td style="font-weight:600;color:var(--text-primary);">${j.mapel||''}</td><td><span class="badge badge-green">Kelas ${j.kelas||''}</span></td><td>${j.ruangan||'-'}</td><td class="no-print" style="white-space:nowrap;"><button class="btn-icon" style="width:30px;height:30px;font-size:12px;" onclick="editJadwal('${id}')"><i class="fas fa-pen"></i></button> <button class="btn-icon" style="width:30px;height:30px;font-size:12px;color:var(--danger);" onclick="hapusJadwal('${id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');}
+function simpanJadwal(){const eid=document.getElementById('jadwalEditId').value,data={hari:document.getElementById('jadwalHari').value,jamMulai:document.getElementById('jadwalJamMulai').value,jamSelesai:document.getElementById('jadwalJamSelesai').value,mapel:document.getElementById('jadwalMapel').value,kelas:document.getElementById('jadwalKelas').value,ruangan:document.getElementById('jadwalRuangan').value.trim()};if(!data.mapel){showToast('Mapel wajib','error');return;}const ref=eid?db.ref('jadwal/'+eid):db.ref('jadwal').push();ref.set(data).then(()=>{showToast(eid?'Diperbarui':'Ditambahkan');hideModal('modalJadwal');document.getElementById('jadwalEditId').value='';['jadwalJamMulai','jadwalJamSelesai','jadwalRuangan'].forEach(id=>document.getElementById(id).value='');}).catch(e=>showToast('Gagal','error'));}
+function editJadwal(id){const j=allJadwal[id];if(!j)return;document.getElementById('jadwalEditId').value=id;document.getElementById('jadwalHari').value=j.hari||'Senin';document.getElementById('jadwalJamMulai').value=j.jamMulai||'';document.getElementById('jadwalJamSelesai').value=j.jamSelesai||'';document.getElementById('jadwalMapel').value=j.mapel||MAPEL[0];document.getElementById('jadwalKelas').value=j.kelas||'I';document.getElementById('jadwalRuangan').value=j.ruangan||'';showModal('modalJadwal');}
+function hapusJadwal(id){konfirmasiHapus('Hapus jadwal?',()=>db.ref('jadwal/'+id).remove().then(()=>showToast('Dihapus')).catch(()=>showToast('Gagal','error')));}
+
+/* ============================
+   RPM
+   ============================ */
+function renderTabMapelRPM(){document.getElementById('tabMapelRPM').innerHTML=MAPEL.map(m=>`<div class="tab-item ${currentMapelRPM===m?'active':''}" onclick="currentMapelRPM='${m}';renderTabMapelRPM();renderRPM();">${MAPEL_S[m]||m}</div>`).join('');}
+function renderRPM(){const items=Object.entries(allRPM).filter(([,r])=>r.mapel===currentMapelRPM).sort((a,b)=>(parseInt(a[1].minggu)||0)-(parseInt(b[1].minggu)||0));const c=document.getElementById('rpmList'),e=document.getElementById('emptyRPM');if(!items.length){c.innerHTML='';e.style.display='block';return;}e.style.display='none';c.innerHTML=items.map(([id,r])=>`<div class="card" style="margin-bottom:14px;"><div class="card-header"><div class="card-title"><i class="fas fa-file-lines"></i> Minggu ke-${r.minggu||'-'} — Kelas ${r.kelas||'-'}</div><div style="display:flex;gap:6px;" class="no-print"><button class="btn btn-secondary btn-sm" onclick="editRPM('${id}')"><i class="fas fa-pen"></i> Edit</button><button class="btn btn-danger btn-sm" onclick="hapusRPM('${id}')"><i class="fas fa-trash"></i></button></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px;"><div><span style="color:var(--text-muted);font-size:11px;font-weight:600;">CAPAIAN PEMBELAJARAN</span><p style="margin-top:4px;color:var(--text-secondary);white-space:pre-wrap;">${r.cp||'-'}</p></div><div><span style="color:var(--text-muted);font-size:11px;font-weight:600;">TUJUAN PEMBELAJARAN</span><p style="margin-top:4px;color:var(--text-secondary);white-space:pre-wrap;">${r.tp||'-'}</p></div><div><span style="color:var(--text-muted);font-size:11px;font-weight:600;">MATERI</span><p style="margin-top:4px;color:var(--text-secondary);">${r.materi||'-'}</p></div><div><span style="color:var(--text-muted);font-size:11px;font-weight:600;">PENGALAMAN BELAJAR</span><p style="margin-top:4px;color:var(--text-secondary);white-space:pre-wrap;">${r.pengalaman||'-'}</p></div><div><span style="color:var(--text-muted);font-size:11px;font-weight:600;">ASESMEN</span><p style="margin-top:4px;color:var(--text-secondary);white-space:pre-wrap;">${r.asesmen||'-'}</p></div><div><span style="color:var(--text-muted);font-size:11px;font-weight:600;">DIFERENSIASI</span><p style="margin-top:4px;color:var(--text-secondary);white-space:pre-wrap;">${r.diferensiasi||'-'}</p></div></div><div style="margin-top:12px;font-size:12px;color:var(--text-muted);"><strong>Sumber:</strong> ${r.sumber||'-'} | <strong>Fase:</strong> ${r.fase||'-'}</div>${r.refleksi?`<div style="margin-top:8px;padding:10px;background:var(--accent-soft);border-radius:8px;font-size:12px;color:var(--accent);"><strong>Refleksi:</strong> ${r.refleksi}</div>`:''}</div>`).join('');}
+function simpanRPM(){const eid=document.getElementById('rpmEditId').value,data={mapel:document.getElementById('rpmMapel').value,kelas:document.getElementById('rpmKelas').value,fase:document.getElementById('rpmFase').value,minggu:document.getElementById('rpmMinggu').value,cp:document.getElementById('rpmCP').value.trim(),tp:document.getElementById('rpmTP').value.trim(),materi:document.getElementById('rpmMateri').value.trim(),pengalaman:document.getElementById('rpmPengalaman').value.trim(),asesmen:document.getElementById('rpmAsesmen').value.trim(),diferensiasi:document.getElementById('rpmDiferensiasi').value.trim(),sumber:document.getElementById('rpmSumber').value.trim(),refleksi:document.getElementById('rpmRefleksi').value.trim(),createdAt:new Date().toISOString()};if(!data.tp){showToast('TP wajib diisi','error');return;}const ref=eid?db.ref('rpm/'+eid):db.ref('rpm').push();ref.set(data).then(()=>{showToast(eid?'Diperbarui':'Dibuat');hideModal('modalRPM');clearFormRPM();}).catch(e=>showToast('Gagal','error'));}
+function editRPM(id){const r=allRPM[id];if(!r)return;document.getElementById('modalRPMTitle').textContent='Edit RPM';document.getElementById('rpmEditId').value=id;document.getElementById('rpmMapel').value=r.mapel||MAPEL[0];document.getElementById('rpmKelas').value=r.kelas||'I';document.getElementById('rpmFase').value=r.fase||'B';document.getElementById('rpmMinggu').value=r.minggu||'';document.getElementById('rpmCP').value=r.cp||'';document.getElementById('rpmTP').value=r.tp||'';document.getElementById('rpmMateri').value=r.materi||'';document.getElementById('rpmPengalaman').value=r.pengalaman||'';document.getElementById('rpmAsesmen').value=r.asesmen||'';document.getElementById('rpmDiferensiasi').value=r.diferensiasi||'';document.getElementById('rpmSumber').value=r.sumber||'';document.getElementById('rpmRefleksi').value=r.refleksi||'';showModal('modalRPM');}
+function hapusRPM(id){konfirmasiHapus('Hapus RPM?',()=>db.ref('rpm/'+id).remove().then(()=>showToast('Dihapus')).catch(()=>showToast('Gagal','error')));}
+function clearFormRPM(){document.getElementById('modalRPMTitle').textContent='Buat RPM Baru';document.getElementById('rpmEditId').value='';['rpmMinggu','rpmCP','rpmTP','rpmMateri','rpmPengalaman','rpmAsesmen','rpmDiferensiasi','rpmSumber','rpmRefleksi'].forEach(id=>document.getElementById(id).value='');}
+
+/* ============================
+   JURNAL
+   ============================ */
+function renderJurnal(){const ftgl=document.getElementById('filterJurnal').value;let items=Object.entries(allJurnal);if(ftgl)items=items.filter(([,j])=>j.tgl===ftgl);items.sort((a,b)=>(b[1].tgl||'').localeCompare(a[1].tgl||''));const tbody=document.getElementById('tbodyJurnal'),empty=document.getElementById('emptyJurnal');if(!items.length){tbody.innerHTML='';empty.style.display='block';tbody.closest('.table-wrap').style.display='none';return;}empty.style.display='none';tbody.closest('.table-wrap').style.display='block';tbody.innerHTML=items.map(([id,j])=>`<tr><td style="white-space:nowrap;">${ft(j.tgl)}</td><td style="font-family:'JetBrains Mono',monospace;">${j.jam||'-'}</td><td style="font-weight:600;">${j.mapel||'-'}</td><td><span class="badge badge-green">Kelas ${j.kelas||'-'}</span></td><td>${j.materi||'-'}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${j.kegiatan||'-'}</td><td class="no-print" style="white-space:nowrap;"><button class="btn-icon" style="width:30px;height:30px;font-size:12px;" onclick="editJurnal('${id}')"><i class="fas fa-pen"></i></button> <button class="btn-icon" style="width:30px;height:30px;font-size:12px;color:var(--danger);" onclick="hapusJurnal('${id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');}
+function simpanJurnal(){const eid=document.getElementById('jurnalEditId').value,data={tgl:document.getElementById('jurnalTgl').value,jam:document.getElementById('jurnalJam').value,mapel:document.getElementById('jurnalMapel').value,kelas:document.getElementById('jurnalKelas').value,materi:document.getElementById('jurnalMateri').value.trim(),kegiatan:document.getElementById('jurnalKegiatan').value.trim()};if(!data.tgl||!data.mapel){showToast('Tanggal dan mapel wajib','error');return;}const ref=eid?db.ref('jurnal/'+eid):db.ref('jurnal').push();ref.set(data).then(()=>{showToast(eid?'Diperbarui':'Ditambahkan');hideModal('modalJurnal');document.getElementById('jurnalEditId').value='';['jurnalTgl','jurnalJam','jurnalMateri','jurnalKegiatan'].forEach(id=>document.getElementById(id).value='');}).catch(e=>showToast('Gagal','error'));}
+function editJurnal(id){const j=allJurnal[id];if(!j)return;document.getElementById('jurnalEditId').value=id;document.getElementById('jurnalTgl').value=j.tgl||'';document.getElementById('jurnalJam').value=j.jam||'';document.getElementById('jurnalMapel').value=j.mapel||MAPEL[0];document.getElementById('jurnalKelas').value=j.kelas||'I';document.getElementById('jurnalMateri').value=j.materi||'';document.getElementById('jurnalKegiatan').value=j.kegiatan||'';showModal('modalJurnal');}
+function hapusJurnal(id){konfirmasiHapus('Hapus jurnal?',()=>db.ref('jurnal/'+id).remove().then(()=>showToast('Dihapus')).catch(()=>showToast('Gagal','error')));}
+
+/* ============================
+   NILAI
+   ============================ */
+function renderTabMapelNilai(){document.getElementById('tabMapelNilai').innerHTML=MAPEL.map(m=>`<div class="tab-item ${currentMapelNilai===m?'active':''}" onclick="currentMapelNilai='${m}';renderTabMapelNilai();renderNilai();">${MAPEL_S[m]||m}</div>`).join('');}
+function renderNilai(){const jenis=document.getElementById('filterJenisNilai').value,mapel=currentMapelNilai;const items=Object.entries(allNilai).filter(([,n])=>n.mapel===mapel&&n.jenis===jenis);const wrap=document.getElementById('tableNilaiWrap'),empty=document.getElementById('emptyNilai');if(!items.length){wrap.innerHTML='';empty.style.display='block';return;}empty.style.display='none';const grouped={};items.forEach(([id,n])=>{const k=(n.kelas||'?')+'|'+(n.keterangan||'?');if(!grouped[k])grouped[k]={kelas:n.kelas,keterangan:n.keterangan,entries:[]};grouped[k].entries.push({id,...n});});let html='';Object.values(grouped).forEach(g=>{html+=`<div style="margin-bottom:16px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span class="badge badge-green">Kelas ${g.kelas||'-'}</span><span style="font-size:13px;font-weight:600;">${g.keterangan||'-'}</span></div><table><thead><tr><th>No</th><th>Nama Siswa</th><th>Nilai</th><th class="no-print">Aksi</th></tr></thead><tbody>`;g.entries.sort((a,b)=>(a.namaSiswa||'').localeCompare(b.namaSiswa||''));g.entries.forEach((e,i)=>{const nc=e.nilai>=75?'var(--accent)':e.nilai>=60?'var(--gold)':'var(--danger)';html+=`<tr><td>${i+1}</td><td style="font-weight:500;color:var(--text-primary);">${e.namaSiswa||'-'}</td><td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${nc};font-size:15px;">${e.nilai??'-'}</td><td class="no-print"><button class="btn-icon" style="width:28px;height:28px;font-size:11px;color:var(--danger);" onclick="hapusNilai('${e.id}')"><i class="fas fa-trash"></i></button></td></tr>`;});html+=`</tbody></table></div>`;});wrap.innerHTML=html;}
+function loadSiswaUntukNilai(){const kelas=document.getElementById('nilaiKelas').value,c=document.getElementById('inputNilaiSiswa');if(!kelas){c.innerHTML='<p style="color:var(--text-muted);font-size:13px;">Pilih kelas dahulu</p>';return;}const sk=allSiswa[kelas]||{},keys=Object.keys(sk);if(!keys.length){c.innerHTML='<p style="color:var(--text-muted);font-size:13px;">Tidak ada siswa. Tambahkan di menu Data Peserta Didik.</p>';return;}c.innerHTML=keys.map(id=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><span style="font-size:13px;">${sk[id].nama}</span><input type="number" class="form-input" style="width:80px;text-align:center;" min="0" max="100" data-siswa-id="${id}" data-siswa-nama="${sk[id].nama}" placeholder="-"></div>`).join('');}
+function simpanNilai(){const mapel=document.getElementById('nilaiMapel').value,kelas=document.getElementById('nilaiKelas').value,jenis=document.getElementById('nilaiJenis').value,ket=document.getElementById('nilaiKeterangan').value.trim();if(!kelas){showToast('Pilih kelas','error');return;}const inputs=document.querySelectorAll('#inputNilaiSiswa input[data-siswa-id]');let cnt=0;const upd={};inputs.forEach(inp=>{const v=inp.value.trim();if(v!==''){const id=gid();upd['nilai/'+id]={mapel,kelas,jenis,keterangan:ket,siswaId:inp.dataset.siswaId,namaSiswa:inp.dataset.siswaNama,nilai:parseInt(v),createdAt:new Date().toISOString()};cnt++;}});if(!cnt){showToast('Tidak ada nilai diisi','error');return;}db.ref().update(upd).then(()=>{showToast(`${cnt} nilai tersimpan`);hideModal('modalNilai');document.getElementById('nilaiKeterangan').value='';document.getElementById('inputNilaiSiswa').innerHTML='<p style="color:var(--text-muted);font-size:13px;">Pilih mapel dan kelas dahulu</p>';}).catch(e=>showToast('Gagal','error'));}
+function hapusNilai(id){konfirmasiHapus('Hapus nilai?',()=>db.ref('nilai/'+id).remove().then(()=>showToast('Dihapus')).catch(()=>showToast('Gagal','error')));}
+function renderAnalisisNilai(){const jenis=document.getElementById('filterJenisNilai').value,mapel=currentMapelNilai;const items=Object.values(allNilai).filter(n=>n.mapel===mapel&&n.jenis===jenis);const c=document.getElementById('analisisNilaiContainer');if(!items.length){c.style.display='none';showToast('Tidak ada data','info');return;}c.style.display='block';const t=items.length,rr=(items.reduce((s,n)=>s+(n.nilai||0),0)/t).toFixed(1),mx=Math.max(...items.map(n=>n.nilai||0)),mn=Math.min(...items.map(n=>n.nilai||0)),tun=items.filter(n=>(n.nilai||0)>=75).length,bt=t-tun,pt=((tun/t)*100).toFixed(1);c.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i class="fas fa-chart-pie"></i> Analisis — ${MAPEL_S[mapel]||mapel} (${jenis})</div></div><div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));"><div style="text-align:center;padding:12px;"><div style="font-size:28px;font-weight:800;color:var(--info);">${rr}</div><div style="font-size:11px;color:var(--text-muted);">Rata-rata</div></div><div style="text-align:center;padding:12px;"><div style="font-size:28px;font-weight:800;color:var(--accent);">${mx}</div><div style="font-size:11px;color:var(--text-muted);">Tertinggi</div></div><div style="text-align:center;padding:12px;"><div style="font-size:28px;font-weight:800;color:var(--danger);">${mn}</div><div style="font-size:11px;color:var(--text-muted);">Terendah</div></div><div style="text-align:center;padding:12px;"><div style="font-size:28px;font-weight:800;color:var(--gold);">${t}</div><div style="font-size:11px;color:var(--text-muted);">Total</div></div></div><div style="margin-top:16px;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;"><div style="flex:1;height:24px;background:var(--bg-secondary);border-radius:6px;overflow:hidden;"><div style="width:${pt}%;height:100%;background:linear-gradient(90deg,var(--accent),#34d399);border-radius:6px;transition:width .5s;"></div></div><span style="font-size:13px;font-weight:700;color:var(--accent);min-width:80px;text-align:right;">${pt}%</span></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);"><span><i class="fas fa-check-circle" style="color:var(--accent);"></i> Tuntas: ${tun}</span><span><i class="fas fa-times-circle" style="color:var(--danger);"></i> Belum Tuntas: ${bt}</span></div></div></div>`;}
+
+/* ============================
+   KEHADIRAN
+   ============================ */
+function renderKehadiran(){const kelas=document.getElementById('filterKelasHadir').value||currentKelas,tgl=document.getElementById('filterTanggalHadir').value||new Date().toISOString().split('T')[0],sk=allSiswa[kelas]||{},keys=Object.keys(sk),tbody=document.getElementById('tbodyKehadiran');if(!keys.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">Tidak ada siswa</td></tr>';return;}const hd={};Object.entries(allKehadiran).forEach(([id,h])=>{if(h.kelas===kelas&&h.tgl===tgl)hd[h.siswaId]={id,...h};});tbody.innerHTML=keys.map((id,i)=>{const s=sk[id],ex=hd[id]||{};return`<tr><td>${i+1}</td><td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${s.nis||'-'}</td><td style="font-weight:500;color:var(--text-primary);">${s.nama}</td><td><input type="radio" name="hadir_${id}" value="H" ${ex.status==='H'?'checked':''} style="accent-color:var(--accent);"></td><td><input type="radio" name="hadir_${id}" value="S" ${ex.status==='S'?'checked':''} style="accent-color:var(--gold);"></td><td><input type="radio" name="hadir_${id}" value="I" ${ex.status==='I'?'checked':''} style="accent-color:var(--info);"></td><td><input type="radio" name="hadir_${id}" value="A" ${ex.status==='A'?'checked':''} style="accent-color:var(--danger);"></td><td><input type="text" class="form-input" style="padding:4px 8px;font-size:12px;" id="ket_${id}" value="${ex.keterangan||''}" placeholder="-"></td></tr>`;}).join('');}
+function simpanKehadiran(){const kelas=document.getElementById('filterKelasHadir').value||currentKelas,tgl=document.getElementById('filterTanggalHadir').value||new Date().toISOString().split('T')[0],sk=allSiswa[kelas]||{};const upd={};Object.entries(allKehadiran).forEach(([id,h])=>{if(h.kelas===kelas&&h.tgl===tgl)upd['kehadiran/'+id]=null;});Object.keys(sk).forEach(sid=>{const rs=document.querySelectorAll(`input[name="hadir_${sid}"]`);let st='';rs.forEach(r=>{if(r.checked)st=r.value;});const kt=document.getElementById('ket_'+sid)?.value||'';upd['kehadiran/'+gid()]={kelas,tgl,siswaId:sid,status:st,keterangan:kt,namaSiswa:sk[sid].nama};});db.ref().update(upd).then(()=>showToast('Kehadiran tersimpan')).catch(e=>showToast('Gagal','error'));}
+
+/* ============================
+   LINKS
+   ============================ */
+function renderLinks(){const items=Object.entries(allLinks),c=document.getElementById('linkList'),e=document.getElementById('emptyLink');if(!items.length){c.innerHTML='';e.style.display='block';return;}e.style.display='none';c.innerHTML=items.map(([id,l])=>`<div class="link-card"><div class="link-icon" style="background:${LINK_CL[l.kategori]||'var(--text-muted)'}15;color:${LINK_CL[l.kategori]||'var(--text-muted)'};"><i class="fas ${LINK_IC[l.kategori]||'fa-link'}"></i></div><div class="link-info"><h4>${l.judul||'-'}</h4><p>${l.kategori||''} ${l.ket?' - '+l.ket:''}</p></div><div style="display:flex;gap:6px;flex-shrink:0;" class="no-print"><a href="${l.url||'#'}" target="_blank" class="btn btn-secondary btn-sm"><i class="fas fa-external-link-alt"></i></a><button class="btn-icon" style="width:30px;height:30px;font-size:12px;" onclick="editLink('${id}')"><i class="fas fa-pen"></i></button><button class="btn-icon" style="width:30px;height:30px;font-size:12px;color:var(--danger);" onclick="hapusLink('${id}')"><i class="fas fa-trash"></i></button></div></div>`).join('');}
+function simpanLink(){const eid=document.getElementById('linkEditId').value,data={judul:document.getElementById('linkJudul').value.trim(),url:document.getElementById('linkURL').value.trim(),kategori:document.getElementById('linkKategori').value,ket:document.getElementById('linkKet').value.trim()};if(!data.judul||!data.url){showToast('Judul dan URL wajib','error');return;}const ref=eid?db.ref('links/'+eid):db.ref('links').push();ref.set(data).then(()=>{showToast(eid?'Diperbarui':'Ditambahkan');hideModal('modalLink');document.getElementById('linkEditId').value='';['linkJudul','linkURL','linkKet'].forEach(id=>document.getElementById(id).value='');}).catch(e=>showToast('Gagal','error'));}
+function editLink(id){const l=allLinks[id];if(!l)return;document.getElementById('linkEditId').value=id;document.getElementById('linkJudul').value=l.judul||'';document.getElementById('linkURL').value=l.url||'';document.getElementById('linkKategori').value=l.kategori||'Lainnya';document.getElementById('linkKet').value=l.ket||'';showModal('modalLink');}
+function hapusLink(id){konfirmasiHapus('Hapus link?',()=>db.ref('links/'+id).remove().then(()=>showToast('Dihapus')).catch(()=>showToast('Gagal','error')));}
+
+/* ============================
+   TINDAK LANJUT
+   ============================ */
+function renderTindakLanjut(){const items=Object.entries(allTindakLanjut).sort((a,b)=>(b[1].tanggal||'').localeCompare(a[1].tanggal||''));const tbody=document.getElementById('tbodyTindakLanjut'),e=document.getElementById('emptyTL');if(!items.length){tbody.innerHTML='';e.style.display='block';tbody.closest('.table-wrap').style.display='none';return;}e.style.display='none';tbody.closest('.table-wrap').style.display='block';tbody.innerHTML=items.map(([id,t])=>{const bc=t.jenis==='Remedial'?'badge-red':t.jenis==='Pengayaan'?'badge-gold':'badge-blue';return`<tr><td style="white-space:nowrap;">${ft(t.tanggal)}</td><td style="font-weight:500;">${t.namaSiswa||'-'}</td><td><span class="badge ${bc}">${t.jenis||'-'}</span></td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.keterangan||'-'}</td><td><span class="badge badge-green">${t.status||'Belum'}</span></td><td class="no-print"><button class="btn-icon" style="width:30px;height:30px;font-size:12px;color:var(--danger);" onclick="hapusTL('${id}')"><i class="fas fa-trash"></i></button></td></tr>`;}).join('');}
+function simpanTindakLanjut(jenis){let data={};const getOpt=selId=>{const s=document.getElementById(selId),o=s.options[s.selectedIndex];return{id:s.value,nama:o?.textContent?.split('(')[0].trim()||''};};if(jenis==='Remedial'){const o=getOpt('remSiswa');data={jenis:'Remedial',siswaId:o.id,namaSiswa:o.nama,mapel:document.getElementById('remMapel').value,keterangan:document.getElementById('remKompetensi').value+'\n'+document.getElementById('remBentuk').value,tanggal:document.getElementById('remTgl').value,status:'Belum'};hideModal('modalRemedial');}else if(jenis==='Pengayaan'){const o=getOpt('pengSiswa');data={jenis:'Pengayaan',siswaId:o.id,namaSiswa:o.nama,mapel:document.getElementById('pengMapel').value,keterangan:document.getElementById('pengBentuk').value,tanggal:document.getElementById('pengTgl').value,status:'Belum'};hideModal('modalPengayaan');}else{const o=getOpt('pendSiswa');data={jenis:'Pendampingan',siswaId:o.id,namaSiswa:o.nama,keterangan:document.getElementById('pendMasalah').value+'\n'+document.getElementById('pendBentuk').value,tanggal:document.getElementById('pendTgl').value,status:'Belum'};hideModal('modalPendampingan');}if(!data.namaSiswa){showToast('Pilih siswa','error');return;}db.ref('tindakLanjut').push().set(data).then(()=>showToast(`${jenis} dicatat`)).catch(e=>showToast('Gagal','error'));}
+function hapusTL(id){konfirmasiHapus('Hapus?',()=>db.ref('tindakLanjut/'+id).remove().then(()=>showToast('Dihapus')).catch(()=>showToast('Gagal','error')));}
+
+/* ============================
+   SUPERVISI
+   ============================ */
+function renderSupervisi(){const items=Object.entries(allSupervisi).sort((a,b)=>(b[1].tgl||'').localeCompare(a[1].tgl||''));const tbody=document.getElementById('tbodySupervisi'),e=document.getElementById('emptySupervisi');if(!items.length){tbody.innerHTML='';e.style.display='block';tbody.closest('.table-wrap').style.display='none';return;}e.style.display='none';tbody.closest('.table-wrap').style.display='block';tbody.innerHTML=items.map(([id,s])=>`<tr><td style="white-space:nowrap;">${ft(s.tgl)}</td><td>${s.pengawas||'-'}</td><td>${s.fokus||'-'}</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.hasil||'-'}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.tl||'-'}</td><td class="no-print"><button class="btn-icon" style="width:30px;height:30px;font-size:12px;color:var(--danger);" onclick="hapusSupervisi('${id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');}
+function simpanSupervisi(){const data={tgl:document.getElementById('supTgl').value,pengawas:document.getElementById('supPengawas').value.trim(),fokus:document.getElementById('supFokus').value.trim(),hasil:document.getElementById('supHasil').value.trim(),tl:document.getElementById('supTL').value.trim()};if(!data.tgl){showToast('Tanggal wajib','error');return;}db.ref('supervisi').push().set(data).then(()=>{showToast('Dicatat');hideModal('modalSupervisi');['supTgl','supPengawas','supFokus','supHasil','supTL'].forEach(id=>document.getElementById(id).value='');}).catch(e=>showToast('Gagal','error'));}
+function hapusSupervisi(id){konfirmasiHapus('Hapus?',()=>db.ref('supervisi/'+id).remove().then(()=>showToast('Dihapus')).catch(()=>showToast('Gagal','error')));}
+
+/* ============================
+   REKAP WALI
+   ============================ */
+function renderRekapWali(){const tbody=document.getElementById('tbodyRekapWali');let all=[];KELAS.forEach(k=>{Object.entries(allSiswa[k]||{}).forEach(([id,s])=>{all.push({id,kelas:k,...s});});});if(!all.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">Belum ada data</td></tr>';return;}tbody.innerHTML=all.map((s,i)=>{let sa=0,iz=0,al=0;Object.values(allKehadiran).forEach(h=>{if(h.siswaId===s.id){if(h.status==='S')sa++;else if(h.status==='I')iz++;else if(h.status==='A')al++;}});const ns=Object.values(allNilai).filter(n=>n.siswaId===s.id);const rr=ns.length?(ns.reduce((sum,n)=>sum+(n.nilai||0),0)/ns.length).toFixed(1):'-';const tl=Object.values(allTindakLanjut).filter(t=>t.siswaId===s.id).length;const rc=rr==='-'?'var(--text-muted)':parseFloat(rr)>=75?'var(--accent)':'var(--danger)';return`<tr><td>${i+1}</td><td style="font-weight:500;color:var(--text-primary);">${s.nama} <span class="badge badge-green" style="margin-left:4px;">${s.kelas}</span></td><td style="text-align:center;">${sa}</td><td style="text-align:center;">${iz}</td><td style="text-align:center;color:${al>3?'var(--danger)':'var(--text-secondary)'};">${al}</td><td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${rc};">${rr}</td><td style="text-align:center;">${tl?`<span class="badge badge-gold">${tl}x</span>`:'-'}</td><td>${al>3||(rr!=='-'&&parseFloat(rr)<75)?'<span class="badge badge-red">Perlu perhatian</span>':'-'}</td></tr>`;}).join('');}
+
+/* ============================
+   DOKUMEN GENERIK
+   ============================ */
+function simpanDokumen(key){const fm={visiMisi:['docVisi'],strukturKurikulum:['docStrukturKurikulum'],profilLulusan:['docProfilLulusan'],prinsipPemb:['docPrinsipPemb'],teknologi:['docTeknologi'],cp:['docCP'],atp:['docATP'],prota:['docProta'],promes:['docPromes'],diferensiasi:['docDiferensiasi'],literasi:['docLiterasi'],programAsesmen:['docProgramAsesmen'],kisiKisi:['docKisiKisi'],soal:['docSoal'],rubrik:['docRubrik'],karakteristik:['docKarSekolah','docKarSiswa'],pemetaan:['docPemetaanMateri','docPemetaanTP','docPemetaanP5','docPemetaanPM']};const lk=['kasus','bimbingan','komunikasi','prestasi','refleksiKinerja'];if(lk.includes(key)){let d={};if(key==='kasus'){const s=document.getElementById('kasusSiswa'),o=s.options[s.selectedIndex];d={siswaId:s.value,namaSiswa:o?.textContent?.split('(')[0].trim()||'',tgl:document.getElementById('kasusTgl').value,deskripsi:document.getElementById('kasusDesk').value,tindakan:document.getElementById('kasusTindakan').value};hideModal('modalKasus');}else if(key==='bimbingan'){const s=document.getElementById('bimSiswa'),o=s.options[s.selectedIndex];d={siswaId:s.value,namaSiswa:o?.textContent?.split('(')[0].trim()||'',tgl:document.getElementById('bimTgl').value,catatan:document.getElementById('bimCatatan').value};hideModal('modalBimbingan');}else if(key==='komunikasi'){const s=document.getElementById('komSiswa'),o=s.options[s.selectedIndex];d={siswaId:s.value,namaSiswa:o?.textContent?.split('(')[0].trim()||'',tgl:document.getElementById('komTgl').value,isi:document.getElementById('komIsi').value};hideModal('modalKomunikasi');}else if(key==='prestasi'){const s=document.getElementById('presSiswa'),o=s.options[s.selectedIndex];d={siswaId:s.value,namaSiswa:o?.textContent?.split('(')[0].trim()||'',tgl:document.getElementById('presTgl').value,isi:document.getElementById('presIsi').value};hideModal('modalPrestasi');}else{d={periode:document.getElementById('refKinerjaPeriode').value,isi:document.getElementById('refKinerjaIsi').value};hideModal('modalRefleksiKinerja');}db.ref('dokumenList/'+key).push().set(d).then(()=>showToast('Tersimpan')).catch(()=>showToast('Gagal','error'));return;}const fields=fm[key]||[];const sk={karakteristik:['karSekolah','karSiswa'],pemetaan:['PemetaanMateri','PemetaanTP','PemetaanP5','PemetaanPM']};const upd={};fields.forEach((f,i)=>{const sub=sk[key]?sk[key][i]:key;upd['dokumen/'+sub]=document.getElementById(f).value;});db.ref().update(upd).then(()=>showToast('Tersimpan')).catch(()=>showToast('Gagal','error'));}
+
+/* ============================
+   SETTING
+   ============================ */
+function simpanSetting(){settingData={nama:document.getElementById('settingNama').value.trim(),waliKelas:document.getElementById('settingWaliKelas').value,semester:document.getElementById('settingSemester').value};db.ref('setting').set(settingData).then(()=>{showToast('Tersimpan');hideModal('modalSetting');}).catch(()=>showToast('Gagal','error'));}
+
+/* ============================
+   INIT
+   ============================ */
+function init(){
+  buildSidebar();populateKelasSelects();
+  document.getElementById('filterTanggalHadir').value=new Date().toISOString().split('T')[0];
+  document.getElementById('filterJurnal').value=new Date().toISOString().split('T')[0];
+  initListeners();renderDashboard();
+}
+document.addEventListener('DOMContentLoaded',init);
+document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');});});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));});
+</script>
+</body>
+</html>
